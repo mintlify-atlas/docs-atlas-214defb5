@@ -1,0 +1,237 @@
+---
+title: "AI inference API acceleration for 30+ providers"
+description: "Route OpenAI, Anthropic, Gemini, Mistral, Groq, and 25+ other AI inference APIs through Xget's ip/ prefix scheme for lower-latency, edge-proxied access."
+---
+
+Xget accelerates AI inference API calls through the `ip/[provider-prefix]` URL scheme. By setting your SDK's `base_url` (or equivalent) to an Xget endpoint, all API requests — including streaming completions, embeddings, and multimodal calls — are routed through Xget's edge network before reaching the upstream provider. Your API keys are forwarded directly to the upstream provider; Xget does not intercept or store them.
+
+## Supported providers
+
+| Provider | Prefix | Original base URL |
+|---|---|---|
+| OpenAI | `openai` | `https://api.openai.com` |
+| Anthropic | `anthropic` | `https://api.anthropic.com` |
+| Gemini | `gemini` | `https://generativelanguage.googleapis.com` |
+| Vertex AI | `vertexai` | `https://aiplatform.googleapis.com` |
+| Cohere | `cohere` | `https://api.cohere.ai` |
+| Mistral AI | `mistralai` | `https://api.mistral.ai` |
+| xAI | `xai` | `https://api.x.ai` |
+| GitHub Models | `githubmodels` | `https://models.github.ai` |
+| NVIDIA API | `nvidiaapi` | `https://integrate.api.nvidia.com` |
+| Perplexity | `perplexity` | `https://api.perplexity.ai` |
+| Groq | `groq` | `https://api.groq.com` |
+| Cerebras | `cerebras` | `https://api.cerebras.ai` |
+| SambaNova | `sambanova` | `https://api.sambanova.ai` |
+| Siray | `siray` | `https://api.siray.ai` |
+| HF Inference | `huggingface` | `https://router.huggingface.co` |
+| Together | `together` | `https://api.together.xyz` |
+| Replicate | `replicate` | `https://api.replicate.com` |
+| Fireworks | `fireworks` | `https://api.fireworks.ai` |
+| Nebius | `nebius` | `https://api.studio.nebius.ai` |
+| Jina | `jina` | `https://api.jina.ai` |
+| Voyage AI | `voyageai` | `https://api.voyageai.com` |
+| Fal AI | `falai` | `https://fal.run` |
+| Novita | `novita` | `https://api.novita.ai` |
+| Burncloud | `burncloud` | `https://ai.burncloud.com` |
+| OpenRouter | `openrouter` | `https://openrouter.ai` |
+| Poe | `poe` | `https://api.poe.com` |
+| Featherless AI | `featherlessai` | `https://api.featherless.ai` |
+| Hyperbolic | `hyperbolic` | `https://api.hyperbolic.xyz` |
+| Braintrust | `braintrust` | `https://api.braintrust.dev` |
+
+## Usage by language
+
+<Tabs>
+  <Tab title="Python">
+    **OpenAI SDK**
+
+    ```python
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key="your-api-key",
+        base_url="https://xget.xi-xu.me/ip/openai/v1",  # Use Xget
+    )
+
+    response = client.responses.create(
+        model="gpt-5.1",
+        input="Hello, GPT!",
+    )
+
+    print(response.output_text)
+    ```
+
+    **Anthropic SDK**
+
+    ```python
+    from anthropic import Anthropic
+
+    client = Anthropic(
+        api_key="your-api-key",
+        base_url="https://xget.xi-xu.me/ip/anthropic",  # Use Xget
+    )
+
+    message = client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=256,
+        messages=[
+            {
+                "role": "user",
+                "content": "Hello, Claude!",
+            }
+        ],
+    )
+
+    print(message.content[0].text)
+    ```
+
+    **Google GenAI SDK (Gemini)**
+
+    ```python
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(
+        api_key="your-api-key",
+        http_options=types.HttpOptions(base_url="https://xget.xi-xu.me/ip/gemini"),  # Use Xget
+    )
+
+    response = client.models.generate_content(
+        model="gemini-3-pro-preview",
+        contents="Hello, Gemini!",
+    )
+
+    print(response.text)
+    ```
+  </Tab>
+  <Tab title="JavaScript / Node.js">
+    **OpenAI npm package**
+
+    ```javascript
+    import OpenAI from 'openai';
+
+    const openaiClient = new OpenAI({
+      apiKey: 'your-openai-api-key',
+      baseURL: 'https://xget.xi-xu.me/ip/openai/v1' // Use Xget
+    });
+
+    async function chatWithGPT() {
+      const response = await openaiClient.responses.create({
+        model: 'gpt-5.1',
+        input: 'Hello, GPT!'
+      });
+
+      console.log(response.output_text);
+    }
+    ```
+
+    **`@anthropic-ai/sdk`**
+
+    ```javascript
+    import Anthropic from '@anthropic-ai/sdk';
+
+    const anthropicClient = new Anthropic({
+      apiKey: 'your-claude-api-key',
+      baseURL: 'https://xget.xi-xu.me/ip/anthropic' // Use Xget
+    });
+
+    async function chatWithClaude() {
+      const message = await anthropicClient.messages.create({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 256,
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello, Claude!'
+          }
+        ]
+      });
+
+      console.log(message.content[0].text);
+    }
+    ```
+
+    **`@google/genai`**
+
+    ```javascript
+    import { GoogleGenAI } from '@google/genai';
+
+    const geminiClient = new GoogleGenAI({
+      apiKey: 'your-gemini-api-key'
+    });
+
+    async function chatWithGemini() {
+      const response = await geminiClient.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: 'Hello, Gemini!',
+        config: {
+          httpOptions: {
+            baseUrl: 'https://xget.xi-xu.me/ip/gemini' // Use Xget
+          }
+        }
+      });
+
+      console.log(response.text);
+    }
+    ```
+  </Tab>
+  <Tab title="Environment variables">
+    Set Xget base URLs in your `.env` file so your SDK clients pick them up automatically without hardcoding URLs in application code.
+
+    ```bash
+    # .env
+    OPENAI_BASE_URL=https://xget.xi-xu.me/ip/openai
+    ANTHROPIC_BASE_URL=https://xget.xi-xu.me/ip/anthropic
+    GEMINI_BASE_URL=https://xget.xi-xu.me/ip/gemini
+    COHERE_BASE_URL=https://xget.xi-xu.me/ip/cohere
+    MISTRAL_AI_BASE_URL=https://xget.xi-xu.me/ip/mistralai
+    GROQ_BASE_URL=https://xget.xi-xu.me/ip/groq
+    ```
+
+    **Python — reading from environment variables**
+
+    ```python
+    import os
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        base_url=os.getenv("OPENAI_BASE_URL")  # Automatically uses Xget
+    )
+    ```
+
+    <Tip>
+      Using environment variables for `base_url` lets you switch between your Xget instance and the original provider endpoint by changing a single variable — useful for local development versus production.
+    </Tip>
+  </Tab>
+</Tabs>
+
+## Multi-provider unified interface
+
+The OpenAI-compatible interface is supported by many providers. You can use the OpenAI SDK to talk to multiple providers simultaneously by changing only the `base_url` and `api_key` per request.
+
+```python
+from openai import OpenAI
+
+providers = [
+    ("Cohere",  "your-cohere-api-key",  "/cohere/compatibility/v1", "command-a-03-2025"),
+    ("Mistral", "your-mistral-api-key", "/mistralai/v1",            "mistral-medium-latest"),
+    ("xAI",     "your-xai-api-key",     "/xai/v1",                  "grok-4"),
+]
+
+for name, key, path, model in providers:
+    client = OpenAI(api_key=key, base_url="https://xget.xi-xu.me/ip" + path)  # Use Xget
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": f"Hello, who are you?"}],
+    )
+    print(name, "=>", response.choices[0].message.content)
+```
+
+<Note>
+  Xget passes streaming responses through transparently. Server-sent event (SSE) streams, chunked transfer encoding, and delta-format completions all work without buffering or modification.
+</Note>
+
+<Note>
+  Your API keys are passed directly to the upstream provider in the `Authorization` header. Xget acts as a transparent proxy and does not log, store, or inspect authentication credentials.
+</Note>

@@ -1,0 +1,175 @@
+---
+title: "Configure Xget: timeouts, caching, security, platforms"
+description: "Tune Xget behavior by editing the CONFIG object in src/config/index.js. Control timeouts, retries, cache duration, CORS, and security settings."
+---
+
+Xget is configured via `src/config/index.js`. The `CONFIG` object controls timeout, retry, caching, and security behavior. Modifying these values and redeploying lets you tune Xget for your specific environment without touching any application logic.
+
+## CONFIG object
+
+Configuration is managed by the `createConfig(env)` function in `src/config/index.js`. It accepts Cloudflare Workers environment variables and merges them with the built-in defaults. The exported `CONFIG` constant is the default instance with no overrides applied:
+
+```javascript src/config/index.js
+// Default values when no environment variables are set
+export function createConfig(env = {}) {
+  return {
+    TIMEOUT_SECONDS: parseInt(String(env.TIMEOUT_SECONDS), 10) || 30,
+    MAX_RETRIES: parseInt(String(env.MAX_RETRIES), 10) || 3,
+    RETRY_DELAY_MS: parseInt(String(env.RETRY_DELAY_MS), 10) || 1000,
+    CACHE_DURATION: parseInt(String(env.CACHE_DURATION), 10) || 1800,
+    SECURITY: {
+      ALLOWED_METHODS: /* env.ALLOWED_METHODS parsed */ ['GET', 'HEAD'],
+      ALLOWED_ORIGINS: /* env.ALLOWED_ORIGINS parsed */ ['*'],
+      MAX_PATH_LENGTH: parseInt(String(env.MAX_PATH_LENGTH), 10) || 2048
+    },
+    PLATFORMS: { /* from platform-catalog.js */ }
+  };
+}
+
+export const CONFIG = createConfig(); // default instance
+```
+
+You can override any numeric value at runtime by setting the corresponding environment variable in your `wrangler.toml` or Cloudflare dashboard. Invalid values or missing variables fall back to the defaults shown above.
+
+### TIMEOUT_SECONDS
+
+**Default:** `30`
+
+Request timeout in seconds. When a proxied upstream request does not complete within this window, Xget cancels it and either retries or returns an error. Increase this value if you're proxying large files from slow upstream servers.
+
+```toml
+# wrangler.toml
+[vars]
+TIMEOUT_SECONDS = "60"
+```
+
+### MAX_RETRIES
+
+**Default:** `3`
+
+Maximum number of retry attempts for transient upstream failures. Set to `0` to disable retries entirely.
+
+```toml
+[vars]
+MAX_RETRIES = "5"
+```
+
+### RETRY_DELAY_MS
+
+**Default:** `1000`
+
+Base delay in milliseconds between retry attempts. Xget uses a linear backoff strategy: retry *N* waits `N × RETRY_DELAY_MS` milliseconds. With the default of `1000`, the first retry waits 1 second, the second waits 2 seconds, and the third waits 3 seconds.
+
+```toml
+[vars]
+RETRY_DELAY_MS = "500"
+```
+
+### CACHE_DURATION
+
+**Default:** `1800` (30 minutes)
+
+How long Xget caches successful responses at the Cloudflare edge, in seconds. Git traffic, Docker registry flows, AI inference requests, and Hugging Face API calls bypass the cache entirely to ensure real-time data.
+
+```toml
+[vars]
+CACHE_DURATION = "3600"
+```
+
+### SECURITY.ALLOWED_METHODS
+
+**Default:** `['GET', 'HEAD']`
+
+HTTP methods allowed for standard requests. Requests using any other method are rejected with a `405 Method Not Allowed` response. Git/LFS, container registry, and AI inference traffic automatically receive broader method allowances (`POST`, `PUT`, `PATCH`, `DELETE`) as required by their respective protocols — you do not need to add these here.
+
+Set via the `ALLOWED_METHODS` environment variable as a comma-separated string:
+
+```toml
+[vars]
+ALLOWED_METHODS = "GET,HEAD"
+```
+
+### SECURITY.ALLOWED_ORIGINS
+
+**Default:** `['*']`
+
+CORS origin allowlist. A value of `['*']` permits any origin to send cross-origin requests to your Xget instance. Restrict this to specific origins in production environments.
+
+```toml
+[vars]
+ALLOWED_ORIGINS = "https://example.com,https://app.example.com"
+```
+
+<Warning>
+  Setting `ALLOWED_ORIGINS` to `['*']` means any website or script can use your Xget instance as a CORS proxy. For production deployments, restrict this to the specific origins that you control.
+</Warning>
+
+### SECURITY.MAX_PATH_LENGTH
+
+**Default:** `2048`
+
+Maximum URL path length in characters. Requests with paths exceeding this limit are rejected with a `400 Bad Request` response. This prevents resource exhaustion from excessively long URLs.
+
+```toml
+[vars]
+MAX_PATH_LENGTH = "4096"
+```
+
+## Adding new platforms
+
+You can extend Xget to proxy additional upstream services by adding entries to `PLATFORM_CATALOG` in `src/config/platform-catalog.js`. Each key is the URL prefix users include in their request, and the value is the upstream base URL.
+
+```javascript
+// src/config/platform-catalog.js
+export const PLATFORM_CATALOG = {
+  // existing entries...
+  custom: 'https://example.com'
+};
+```
+
+With this entry, a request to `https://your-instance.example.com/custom/some/path` is proxied to `https://example.com/some/path`.
+
+If the upstream service uses a different path structure than a simple prefix swap, add a path transformer in `src/routing/platform-transformers.js`:
+
+```javascript
+// src/routing/platform-transformers.js
+const PLATFORM_PATH_TRANSFORMERS = {
+  // existing transformers...
+  custom: path => path.replace(/^\/custom\//, '/')
+};
+```
+
+Path transformers receive the path after the platform prefix has been stripped, and return the path that should be sent to the upstream service.
+
+<Note>
+  After adding a new platform, redeploy your Xget instance for the change to take effect. Run `npm run deploy` or push to your deployment branch.
+</Note>
+
+## Security headers
+
+Xget automatically applies the following security headers to every response. You do not need to configure these — they are added unconditionally by `addSecurityHeaders` in `src/utils/security.js`.
+
+| Header | Value |
+|---|---|
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` |
+| `X-Frame-Options` | `DENY` |
+| `Content-Security-Policy` | `default-src 'none'; img-src 'self'; script-src 'none'` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `interest-cohort=()` |
+| `X-XSS-Protection` | `1; mode=block` |
+
+These headers enforce HTTPS, prevent clickjacking, restrict cross-origin resource loading, limit referrer leakage, and disable privacy-sensitive browser features by default.
+
+## Performance tuning
+
+Consider the following adjustments based on your workload:
+
+**Cache duration:** The default 30-minute cache is appropriate for package files and release archives. If you proxy frequently updated metadata endpoints, consider a shorter `CACHE_DURATION`. If you primarily serve large, stable binary files, a longer duration reduces upstream load.
+
+**Timeout:** The default 30-second timeout suits most upstreams. Increase `TIMEOUT_SECONDS` when proxying very large files or slow upstream servers, such as Hugging Face model weights. Decreasing it fails fast and frees resources for requests that are more likely to succeed.
+
+**Retry strategy:** Three retries with 1-second base delay handles most transient network errors. Reduce `MAX_RETRIES` if upstream reliability is high and low latency matters more than resilience. Increase `RETRY_DELAY_MS` if you see upstream rate-limiting causing cascading failures.
+
+<Note>
+  All configuration changes require redeployment. Run `npm run deploy` to push updates to Cloudflare Workers.
+</Note>

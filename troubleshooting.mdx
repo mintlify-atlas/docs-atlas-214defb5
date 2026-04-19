@@ -1,0 +1,191 @@
+---
+title: "Troubleshooting common Xget deployment and usage issues"
+description: "Diagnose and resolve common Xget problems using built-in response headers, log debugging, and security header inspection techniques."
+---
+
+Xget includes built-in diagnostics via the `X-Performance-Metrics` response header. Before diving into specific issues, inspect this header on any standard response — it tells you exactly what happened during request processing and whether the response came from cache or upstream.
+
+## Performance monitoring headers
+
+Xget adds the `X-Performance-Metrics` header to standard (non-protocol) responses. This header is not included on Git, Docker, or AI inference responses to preserve protocol compatibility.
+
+### X-Performance-Metrics
+
+Contains a JSON object with timing data (in milliseconds) for each stage of request processing. The keys are timing mark names and the values are elapsed milliseconds since the request started.
+
+A `cache_hit` key indicates the response was served from the Cloudflare edge cache. A `cache_hit_full_content` key means a range request was satisfied from a cached full response. An `attempt_N` key records how long each upstream fetch attempt took. A `success` or `complete` key marks total processing time.
+
+```json
+{"cache_hit": 2, "complete": 5}
+```
+
+```json
+{"attempt_0": 45, "success": 47, "complete": 48}
+```
+
+To inspect these headers with curl:
+
+```bash
+curl -sv https://your-instance.example.com/gh/owner/repo/archive/refs/heads/main.zip 2>&1 | grep -i x-performance
+```
+
+Make the same request twice — the second response should show a `cache_hit` key if the platform and response are cacheable.
+
+## Common issues
+
+<AccordionGroup>
+  <Accordion title="No significant speed improvement">
+    Xget caches responses at the Cloudflare edge after the first request. If you are accessing a URL for the first time, the response must be fetched from upstream — this initial request may be no faster (or slightly slower) than a direct request. Subsequent requests to the same URL will be served from the edge cache and will be significantly faster.
+
+    **Steps to verify:**
+    1. Make the same request twice.
+    2. Check `X-Performance-Metrics` on the second response — it should contain a `cache_hit` key.
+    3. If `cache_hit` is absent on repeated requests, verify that the platform you are using is cacheable. Git, Docker, AI inference, and Hugging Face API requests bypass the cache by design.
+  </Accordion>
+
+  <Accordion title="Git operations failing">
+    Git clone, pull, and fetch use HTTP smart protocol endpoints that Xget detects automatically. If Git operations are failing:
+
+    - Verify the URL format. GitHub uses the `gh` prefix: `https://your-instance.example.com/gh/owner/repo.git`
+    - Ensure your Git client is using HTTPS, not SSH.
+    - Confirm your Git client supports HTTPS proxying (standard `git` on all platforms does).
+    - Check that the `.git` suffix is present — some platforms require it for smart protocol negotiation.
+
+    ```bash
+    # Correct format
+    git clone https://your-instance.example.com/gh/microsoft/vscode.git
+
+    # Test a simple clone to isolate the issue
+    git clone --depth 1 https://your-instance.example.com/gh/octocat/Hello-World.git
+    ```
+  </Accordion>
+
+  <Accordion title="Cannot access after deployment">
+    If your deployed Xget instance returns an error or is unreachable:
+
+    - Check that your Cloudflare Workers domain binding is configured in `wrangler.toml`.
+    - Verify the `wrangler.toml` `name` and `routes` fields are correct for your account.
+    - Ensure any required GitHub Actions secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) are set in your repository settings if using CI/CD deployment.
+    - Check the Cloudflare Workers dashboard for deployment errors or worker invocation errors.
+
+    ```bash
+    # Re-deploy manually to check for build or configuration errors
+    npm run deploy
+    ```
+  </Accordion>
+
+  <Accordion title="Getting a 400 error">
+    A `400 Bad Request` response from Xget indicates one of two problems:
+
+    1. **Invalid platform prefix** — the prefix in your URL does not match any entry in `PLATFORM_CATALOG`. Check the [URL conversion guide](/url-conversion) for the correct prefix for your platform.
+    2. **Path too long** — the request path exceeds the configured `MAX_PATH_LENGTH` (default: 2048 characters). Shorten the URL or increase `MAX_PATH_LENGTH` in your configuration.
+
+    ```bash
+    # Check the response body for the specific error message
+    curl -sv https://your-instance.example.com/invalid-prefix/some/path
+    ```
+  </Accordion>
+
+  <Accordion title="Getting 405 Method Not Allowed">
+    Standard Xget requests are restricted to `GET` and `HEAD` by default. A `405 Method Not Allowed` response means the HTTP method you used is not in the `ALLOWED_METHODS` list.
+
+    For most use cases, this is the correct behavior — browsers and download tools use `GET`, and that is all you need. If you are calling an API endpoint that requires `POST`, verify that you are using the AI inference prefix (`ip/`) or another protocol-aware prefix. Xget automatically allows `POST`, `PUT`, `PATCH`, and `DELETE` for Git, Docker registry, AI inference, and Hugging Face API traffic.
+
+    If you need to extend `ALLOWED_METHODS` for a custom use case, update the `ALLOWED_METHODS` environment variable in your configuration. See [Configuration](/configuration) for details.
+  </Accordion>
+
+  <Accordion title="Container image pull failing">
+    Docker authentication is handled automatically by Xget's Docker protocol adapter. If a container pull is failing:
+
+    - Verify you are using the correct registry prefix format: `cr/[registry]`. For example, Docker Hub is `cr/docker` and GitHub Container Registry is `cr/ghcr`.
+    - Ensure the full image path is correct. For Docker Hub official images, omit the `library/` namespace prefix in your Docker client command — Xget handles the normalization.
+    - Test with a known public image first:
+
+    ```bash
+    # Docker Hub (official nginx image)
+    docker pull your-instance.example.com/cr/docker/library/nginx:latest
+
+    # GitHub Container Registry
+    docker pull your-instance.example.com/cr/ghcr/owner/image:tag
+    ```
+
+    If pulls fail for private images, confirm that your Docker client is passing credentials correctly — Xget forwards authentication headers to the upstream registry.
+  </Accordion>
+
+  <Accordion title="npm or pip install slow or failing">
+    If package manager installs are slow or failing after configuring Xget as your registry mirror:
+
+    1. Verify the registry URL is correctly set:
+
+    ```bash
+    # Check npm registry
+    npm config get registry
+    # Should be: https://your-instance.example.com/npm/
+
+    # Check pip index URL
+    pip config get global.index-url
+    # Should be: https://your-instance.example.com/pypi/simple/
+    ```
+
+    2. Test connectivity with a direct request:
+
+    ```bash
+    # npm — fetch package metadata
+    curl https://your-instance.example.com/npm/lodash
+
+    # PyPI — fetch package index
+    curl https://your-instance.example.com/pypi/simple/requests/
+    ```
+
+    3. If the direct request succeeds but the package manager fails, check for client-side SSL verification or proxy settings interfering with the request.
+  </Accordion>
+</AccordionGroup>
+
+## Log debugging
+
+### In development
+
+Run the Wrangler dev server with debug logging enabled to see detailed request processing output:
+
+```bash
+npx wrangler dev --log-level debug
+```
+
+This prints routing decisions, cache lookups, upstream fetch attempts, retry events, and error details to your terminal.
+
+### In production
+
+If you have enabled the `[observability]` block in your `wrangler.toml`, logs from `console.log` and `console.warn` calls in the Worker are available in the Cloudflare Workers dashboard under **Logs** for your Worker.
+
+```toml
+# wrangler.toml
+[observability]
+enabled = true
+```
+
+With observability enabled, you can tail live logs or query historical logs for specific request failures, cache warnings, or upstream errors.
+
+## Security header inspection
+
+Xget applies security headers to every response. If you suspect headers are missing — for example, after a deployment change — verify them directly:
+
+```bash
+curl -I https://your-instance.example.com/gh/owner/repo/archive/refs/heads/main.zip
+```
+
+You should see all of the following headers in the response:
+
+```
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+X-Frame-Options: DENY
+Content-Security-Policy: default-src 'none'; img-src 'self'; script-src 'none'
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: interest-cohort=()
+X-XSS-Protection: 1; mode=block
+```
+
+If any of these headers are absent, confirm that the request path matched a valid platform prefix and that the response went through the full Xget response pipeline. Requests that short-circuit before platform routing — for example, due to an invalid path or method — may not have all security headers applied.
+
+<Tip>
+  Before troubleshooting URL format issues, use the [URL Converter at xuc.xi-xu.me](https://xuc.xi-xu.me) to generate the correct Xget URL for any supported platform. Paste your original URL and the converter produces the accelerated equivalent instantly.
+</Tip>

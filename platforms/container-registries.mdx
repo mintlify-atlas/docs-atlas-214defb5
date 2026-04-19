@@ -1,0 +1,190 @@
+---
+title: "Container registry acceleration with Docker and Podman"
+description: "Pull images from Docker Hub, GHCR, GCR, MCR, ECR, and 13 other container registries through Xget's cr/ prefix scheme — with automatic token exchange."
+---
+
+Xget accelerates container image pulls by proxying requests to 17 container registries through a single `cr/[registry-prefix]` URL scheme. Docker Hub, GitHub Container Registry, Google Container Registry, Microsoft Container Registry, Amazon ECR, and more are all reachable through Xget. Authentication token exchange is handled automatically — you do not need to re-login or configure credentials differently.
+
+## Supported registries
+
+| Registry | Prefix | Original URL |
+|---|---|---|
+| Docker Hub | `docker` | `https://registry-1.docker.io` |
+| Quay.io | `quay` | `https://quay.io` |
+| Google Container Registry | `gcr` | `https://gcr.io` |
+| Microsoft Container Registry | `mcr` | `https://mcr.microsoft.com` |
+| Amazon Public ECR | `ecr` | `https://public.ecr.aws` |
+| GitHub Container Registry | `ghcr` | `https://ghcr.io` |
+| GitLab Container Registry | `gitlab` | `https://registry.gitlab.com` |
+| Red Hat Registry | `redhat` | `https://registry.redhat.io` |
+| Oracle Container Registry | `oracle` | `https://container-registry.oracle.com` |
+| Cloudsmith | `cloudsmith` | `https://docker.cloudsmith.io` |
+| DigitalOcean Registry | `digitalocean` | `https://registry.digitalocean.com` |
+| VMware Registry | `vmware` | `https://projects.registry.vmware.com` |
+| Kubernetes Registry | `k8s` | `https://registry.k8s.io` |
+| Heroku Registry | `heroku` | `https://registry.heroku.com` |
+| SUSE Registry | `suse` | `https://registry.suse.com` |
+| openSUSE Registry | `opensuse` | `https://registry.opensuse.org` |
+| Gitpod Registry | `gitpod` | `https://registry.gitpod.io` |
+
+<Note>
+  Xget handles the Docker authentication token exchange automatically. When your Docker client receives a `401 Unauthorized` challenge, Xget proxies the token request to the upstream registry's auth service and returns a valid Bearer token — the same flow your client expects.
+</Note>
+
+## Docker pull examples
+
+```bash
+# Pull GitHub Container Registry images
+docker pull xget.xi-xu.me/cr/ghcr/nginxinc/nginx-unprivileged:latest
+
+# Pull Google Container Registry images
+docker pull xget.xi-xu.me/cr/gcr/distroless/base:latest
+
+# Pull Microsoft Container Registry images
+docker pull xget.xi-xu.me/cr/mcr/dotnet/runtime:8.0
+```
+
+## Docker Compose
+
+```yaml
+# docker-compose.yml — use Xget-accelerated images
+version: '3.8'
+services:
+  web:
+    image: xget.xi-xu.me/cr/ghcr/nginxinc/nginx-unprivileged:latest
+    ports:
+      - '80:80'
+    volumes:
+      - ./html:/usr/share/nginx/html
+
+  database:
+    image: xget.xi-xu.me/cr/mcr/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: 'MyStrongPassword123!'
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+  cache:
+    image: xget.xi-xu.me/cr/ghcr/bitnami/redis:alpine
+    ports:
+      - '6379:6379'
+
+volumes:
+  mssql_data:
+```
+
+## Dockerfile
+
+```dockerfile
+# Use Xget-accelerated base images in Dockerfile
+FROM xget.xi-xu.me/cr/ghcr/nodejs/node:18-alpine AS builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM xget.xi-xu.me/cr/ghcr/nginxinc/nginx-unprivileged:latest
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Use Microsoft Container Registry's .NET image
+FROM xget.xi-xu.me/cr/mcr/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+COPY --from=builder /app/publish .
+ENTRYPOINT ["dotnet", "MyApp.dll"]
+```
+
+## Kubernetes deployment
+
+```yaml
+# deployment.yaml — use Xget images in Kubernetes
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: xget.xi-xu.me/cr/ghcr/nginxinc/nginx-unprivileged:latest
+          ports:
+            - containerPort: 80
+        - name: redis
+          image: xget.xi-xu.me/cr/ghcr/bitnami/redis:alpine
+          ports:
+            - containerPort: 6379
+```
+
+## Podman
+
+```bash
+# Pull images directly with Podman
+podman pull xget.xi-xu.me/cr/ghcr/alpine/alpine:latest
+podman pull xget.xi-xu.me/cr/ghcr/nginxinc/nginx-unprivileged:latest
+```
+
+To configure Podman to transparently remap a registry, edit `/etc/containers/registries.conf`:
+
+```toml
+[[registry]]
+prefix = "ghcr.io"
+location = "xget.xi-xu.me/cr/ghcr"
+```
+
+## containerd
+
+Edit `/etc/containerd/config.toml` to add Xget mirror endpoints:
+
+```toml
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."ghcr.io"]
+    endpoint = ["https://xget.xi-xu.me/cr/ghcr"]
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io"]
+    endpoint = ["https://xget.xi-xu.me/cr/gcr"]
+```
+
+```bash
+# Restart containerd to apply
+sudo systemctl restart containerd
+```
+
+## GitHub Actions CI/CD
+
+```yaml
+# GitHub Actions — use Xget to accelerate container builds
+name: Build and Deploy
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build with accelerated base images
+        run: |
+          docker build -t myapp:latest \
+            --build-arg BASE_IMAGE=xget.xi-xu.me/cr/ghcr/nodejs/node:18-alpine .
+
+      - name: Test with accelerated images
+        run: |
+          docker run --rm \
+            xget.xi-xu.me/cr/mcr/dotnet/runtime:8.0 \
+            dotnet --version
+```
+
+<Warning>
+  If you self-host Xget, ensure that requests to `/v2/auth` paths are not blocked by any upstream firewall or reverse proxy. Xget's Docker authentication flow depends on being able to forward token requests to the upstream registry's auth service. When running behind authentication or IP allowlists, make sure the `/cr/[registry]/v2/auth` path is reachable.
+</Warning>

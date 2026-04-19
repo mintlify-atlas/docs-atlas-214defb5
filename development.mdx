@@ -1,94 +1,164 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: "Local development, testing, and contributing to Xget"
+description: "Set up a local Xget dev environment, run the test suite, and contribute changes. Covers Wrangler, Vitest, project structure, and the PR workflow."
 ---
 
-<Info>
-  **Prerequisites**:
-  - Node.js version 19 or higher
-  - A docs repository with a `docs.json` file
-</Info>
+Xget is a Cloudflare Workers project developed with Wrangler. This page covers setting up a local environment, running the test suite, and contributing changes. The local dev server simulates the Cloudflare Workers runtime on your machine, so you can test request routing, caching behavior, and protocol handling without deploying.
 
-Follow these steps to install and run Mintlify on your operating system.
+## Prerequisites
+
+Before you start, make sure you have the following installed:
+
+- **Node.js 24** and **npm**
+- **Wrangler CLI** — installed automatically via `npm install`, or globally with `npm install -g wrangler`
+- A **Cloudflare account** — required only for deploying; not needed for local development or testing
+
+## Setup
 
 <Steps>
-<Step title="Install the Mintlify CLI">
+  <Step title="Fork and clone the repository">
+    Fork [xixu-me/xget](https://github.com/xixu-me/xget) on GitHub, then clone your fork:
 
-```bash
-npm i -g mint
-```
-</Step>
+    ```bash
+    git clone https://github.com/your-username/xget.git
+    cd xget
+    ```
+  </Step>
+  <Step title="Install dependencies">
+    ```bash
+    npm install
+    ```
 
-<Step title="Preview locally">
+    This installs Wrangler, Vitest, ESLint, Prettier, TypeScript, and all other dev dependencies.
+  </Step>
+  <Step title="Authenticate with Cloudflare (first time only)">
+    This step is only required if you want to deploy to Cloudflare Workers. Local development and testing work without it.
 
-Navigate to your docs directory where your `docs.json` file is located, and run the following command:
+    ```bash
+    npx wrangler login
+    ```
 
-```bash
-mint dev
-```
+    This opens a browser window to authenticate with your Cloudflare account.
+  </Step>
+  <Step title="Start the dev server">
+    ```bash
+    npm run dev
+    ```
 
-A local preview of your documentation will be available at `http://localhost:3000`.
-
-</Step>
+    Wrangler starts a local dev server at `http://localhost:8787`. Requests are handled by the full Worker pipeline — including platform routing, caching, retry logic, and security headers.
+  </Step>
 </Steps>
 
-## Custom ports
+<Tip>
+  Use `npm run dev` to test URL routing and protocol handling locally. The Wrangler dev server runs the same Workers runtime that Cloudflare uses in production, so behavior is consistent between local and deployed environments.
+</Tip>
 
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. For example, to run Mintlify on port 3333, use this command:
+## Available scripts
+
+| Script | Description |
+|---|---|
+| `npm run dev` / `npm start` | Start the Wrangler dev server at `http://localhost:8787` |
+| `npm run test:run` | Run the full test suite once |
+| `npm run test:watch` | Run tests in watch mode (re-runs on file changes) |
+| `npm run test:coverage` | Run tests and generate an Istanbul coverage report |
+| `npm run test:ui` | Open the Vitest browser UI |
+| `npm run lint` | Run ESLint on `src/`, `test/`, and `adapters/` |
+| `npm run lint:fix` | Run ESLint with auto-fix |
+| `npm run format` | Format all source files with Prettier |
+| `npm run format:check` | Check formatting without writing changes |
+| `npm run type-check` | Run TypeScript type checking with `tsc --noEmit` |
+| `npm run deploy` | Deploy to Cloudflare Workers production |
+
+## Testing
+
+Xget uses [Vitest](https://vitest.dev/) with `@cloudflare/vitest-pool-workers` to run tests inside the Workers runtime. Coverage is generated via `@vitest/coverage-istanbul`.
+
+**Run all tests once:**
 
 ```bash
-mint dev --port 3333
+npm run test:run
 ```
 
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
-
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
-
-## Mintlify versions
-
-Please note that each CLI release is associated with a specific version of Mintlify. If your local preview does not align with the production version, please update the CLI:
+**Generate a coverage report:**
 
 ```bash
-npm mint update
+npm run test:coverage
 ```
 
-## Validating links
+The test suite is organized into four categories:
 
-The CLI can assist with validating links in your documentation. To identify any broken links, use the following command:
+- **Unit tests** — isolated tests for individual utility functions, config parsing, path transformers, and routing helpers
+- **Integration tests** — end-to-end tests that exercise the full request pipeline for each platform
+- **Security tests** — validate that security headers are present, methods are enforced, and path length limits are respected
+- **Performance tests** — verify that the `PerformanceMonitor` produces correct timing marks and that `X-Performance-Metrics` headers are set
+
+Tests live in the `test/` directory. Add or update tests whenever you change behavior that affects routing, headers, cache logic, retries, security controls, or protocol compatibility.
+
+## Project structure
+
+```
+xget/
+├── src/
+│   ├── app/          # Main request handler and request context
+│   ├── config/       # Platform catalog (PLATFORM_CATALOG) and app config (CONFIG)
+│   ├── protocols/    # Git, Docker, AI, and Hugging Face protocol handlers
+│   ├── routing/      # Platform matching, path transformation, and target resolution
+│   ├── upstream/     # Cache lookup, upstream fetch, and retry logic
+│   ├── response/     # Response finalization and header processing
+│   └── utils/        # Security headers, CORS, request validation, performance monitoring
+├── adapters/         # Runtime adapters for Vercel, Netlify, and Deno Deploy
+├── test/             # Full test suite (unit, integration, security, performance)
+├── wrangler.toml     # Cloudflare Workers configuration
+└── package.json
+```
+
+Each directory has a single clear responsibility. When adding a new platform, you typically only need to touch `src/config/platform-catalog.js` and optionally `src/routing/platform-transformers.js`. Changes to protocol-level behavior go in `src/protocols/`.
+
+## Contributing
+
+Xget welcomes contributions of all sizes, including bug reports, documentation improvements, test coverage, and new platform support.
+
+### Before you open a pull request
+
+Run the following checks locally and ensure they all pass:
 
 ```bash
-mint broken-links
+npm run lint
+npm run format:check
+npm run test:run
+npm run type-check
 ```
 
-## Deployment
+### Commit message format
 
-If the deployment is successful, you should see the following:
+This repository uses [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). All commit messages must follow the format:
 
-<Frame>
-  <img src="/images/checks-passed.png" alt="Screenshot of a deployment confirmation message that says All checks have passed." style={{ borderRadius: '0.5rem' }} />
-</Frame>
+```text
+type(scope): description
+```
 
-## Code formatting
+Examples:
 
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
+```text
+feat(docker): normalize blob redirect handling
+fix(routing): preserve crates search queries
+docs(readme): clarify npm registry setup
+```
 
-## Troubleshooting
+Commit message validation is enforced automatically via `commitlint` on the `commit-msg` git hook.
 
-<AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
+### Pull request workflow
 
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of the CLI: `npm remove -g mint`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall the CLI: `npm i -g mint`
-  </Accordion>
+1. Fork the repository and create a branch from `main`.
+2. Keep your change focused — avoid mixing unrelated fixes in a single PR.
+3. Add or update tests when behavior changes.
+4. Update documentation when user-facing behavior, configuration, or platform support changes.
+5. Open a pull request using the repository template and describe the user impact clearly.
 
-  <Accordion title="Issue: Encountering an unknown error">
-  
-    Solution: Go to the root of your device and delete the `~/.mintlify` folder. Then run `mint dev` again.
-  </Accordion>
-</AccordionGroup>
+### Code style
 
-Curious about what changed in the latest CLI version? Check out the [CLI changelog](https://www.npmjs.com/package/mintlify?activeTab=versions).
+- ESLint enforces code style rules (`npm run lint`).
+- Prettier enforces formatting (`npm run format:check`).
+- Follow the existing project structure and naming conventions.
+- Avoid logging secrets, tokens, or private request data.
+- Document new platform prefixes and examples in `README.md` when adding support for a new platform.

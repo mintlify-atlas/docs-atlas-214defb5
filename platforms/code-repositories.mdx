@@ -1,0 +1,149 @@
+---
+title: "Accelerate Git, GitHub, GitLab, and code repository access"
+description: "Speed up GitHub, GitLab, Gitea, Codeberg, SourceForge, AOSP, Hugging Face, and Civitai with Xget's edge-accelerated Git-compatible proxy."
+---
+
+Xget accelerates access to the most widely used code and model hosting platforms. This page covers Git-based operations and file downloads for GitHub, GitHub Gist, GitLab, Gitea, Codeberg, SourceForge, AOSP (Android Open Source Project), Hugging Face, and Civitai — letting you clone, pull, and fetch through Xget's global edge network without changing your Git client or workflow.
+
+## Supported platforms
+
+| Platform | Prefix | Base URL |
+|---|---|---|
+| GitHub | `gh` | `https://github.com` |
+| GitHub Gist | `gist` | `https://gist.github.com` |
+| GitLab | `gl` | `https://gitlab.com` |
+| Gitea | `gitea` | `https://gitea.com` |
+| Codeberg | `codeberg` | `https://codeberg.org` |
+| SourceForge | `sf` | `https://sourceforge.net` |
+| AOSP | `aosp` | `https://android.googlesource.com` |
+| Hugging Face | `hf` | `https://huggingface.co` |
+| Civitai | `civitai` | `https://civitai.com` |
+
+## Git operations
+
+Use Xget URLs in place of the original host. Xget detects Git protocol traffic automatically and preserves all Git-specific headers, authentication, and request semantics.
+
+<Tabs>
+  <Tab title="GitHub">
+    ```bash
+    # Clone repository
+    git clone https://xget.xi-xu.me/gh/microsoft/vscode.git
+
+    # Clone specific branch
+    git clone -b main https://xget.xi-xu.me/gh/facebook/react.git
+
+    # Shallow clone (latest commit only)
+    git clone --depth 1 https://xget.xi-xu.me/gh/torvalds/linux.git
+
+    # Add remote repository
+    git remote add upstream https://xget.xi-xu.me/gh/[owner]/[repository].git
+
+    # Pull updates
+    git pull https://xget.xi-xu.me/gh/microsoft/vscode.git main
+
+    # Recursive submodule clone
+    git clone --recursive https://xget.xi-xu.me/gh/[username]/[repository-with-submodules].git
+    ```
+  </Tab>
+  <Tab title="GitLab">
+    ```bash
+    # Clone GitLab repository
+    git clone https://xget.xi-xu.me/gl/gitlab-org/gitlab.git
+
+    # Clone specific branch
+    git clone -b main https://xget.xi-xu.me/gl/gitlab-org/gitlab-runner.git
+
+    # Shallow clone
+    git clone --depth 1 https://xget.xi-xu.me/gl/gitlab-org/gitlab.git
+    ```
+  </Tab>
+  <Tab title="Gitea">
+    ```bash
+    # Clone Gitea repository
+    git clone https://xget.xi-xu.me/gitea/gitea/gitea.git
+
+    # Clone Codeberg repository
+    git clone https://xget.xi-xu.me/codeberg/forgejo/forgejo.git
+
+    # Clone SourceForge repository
+    git clone https://xget.xi-xu.me/sf/projects/mingw-w64/code.git
+    ```
+  </Tab>
+  <Tab title="AOSP">
+    ```bash
+    # Clone AOSP platform repository
+    git clone https://xget.xi-xu.me/aosp/platform/frameworks/base.git
+
+    # Clone AOSP device tree
+    git clone https://xget.xi-xu.me/aosp/device/google/pixel.git
+
+    # Shallow clone for faster initial checkout
+    git clone --depth 1 https://xget.xi-xu.me/aosp/platform/frameworks/base.git
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  Use `--depth 1` for a shallow clone that only fetches the most recent commit. This dramatically reduces download size and time when you do not need full history.
+</Tip>
+
+<Note>
+  Xget supports Git LFS (Large File Storage) transparently. LFS pointer resolution and object downloads are handled automatically — no extra configuration is needed in your Git client.
+</Note>
+
+## Git global acceleration configuration
+
+You can configure Git to transparently rewrite URLs for specific hosts, so every `git clone`, `git pull`, and `git fetch` command targeting those platforms is automatically routed through Xget — without changing any of your existing scripts or workflows.
+
+```bash
+# Configure Git to use Xget for specific domains
+git config --global url."https://xget.xi-xu.me/gh/".insteadOf "https://github.com/"
+git config --global url."https://xget.xi-xu.me/gl/".insteadOf "https://gitlab.com/"
+git config --global url."https://xget.xi-xu.me/gitea/".insteadOf "https://gitea.com/"
+git config --global url."https://xget.xi-xu.me/codeberg/".insteadOf "https://codeberg.org/"
+git config --global url."https://xget.xi-xu.me/sf/".insteadOf "https://sourceforge.net/"
+git config --global url."https://xget.xi-xu.me/aosp/".insteadOf "https://android.googlesource.com/"
+
+# Verify configuration
+git config --global --get-regexp url
+
+# Now all git clone operations for relevant platforms will automatically use Xget
+git clone https://github.com/microsoft/vscode.git  # Automatically converted to Xget URL
+git clone https://gitlab.com/gitlab-org/gitlab.git  # Automatically converted to Xget URL
+git clone https://codeberg.org/forgejo/forgejo.git  # Automatically converted to Xget URL
+git clone https://android.googlesource.com/platform/frameworks/base.git  # Automatically converted to Xget URL
+```
+
+## Hugging Face mirror
+
+Set the `HF_ENDPOINT` environment variable before loading any models or datasets. The `transformers` library and other Hugging Face ecosystem tools read this variable and direct all hub traffic through Xget.
+
+```python
+import os
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+# Set environment variable to make transformers library automatically use Xget mirror
+os.environ['HF_ENDPOINT'] = 'https://xget.xi-xu.me/hf'
+
+# Define model name
+model_name = 'microsoft/DialoGPT-medium'
+
+print(f"Downloading model from mirror: {model_name}")
+
+# Use AutoModelForCausalLM to load dialogue generation model
+# Since we set the environment variable above, no additional parameters are needed here
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
+
+print("Model and tokenizer loaded successfully!")
+```
+
+You can also download model and dataset files directly using the `hf` prefix:
+
+```bash
+# Download a model file
+wget https://xget.xi-xu.me/hf/microsoft/DialoGPT-medium/resolve/main/pytorch_model.bin
+
+# Download a dataset file
+wget https://xget.xi-xu.me/hf/datasets/rajpurkar/squad/resolve/main/plain_text/train-00000-of-00001.parquet
+```

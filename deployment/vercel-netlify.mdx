@@ -1,0 +1,88 @@
+---
+title: "Deploy Xget on Vercel or Netlify as a Serverless Function"
+description: "Deploy Xget to Vercel or Netlify Functions as an alternative to Cloudflare Workers — ideal for teams already building on those platforms."
+---
+
+Vercel and Netlify are well-supported alternatives for teams already running their infrastructure on those platforms. Both deployments work through the `functions` branch, which is automatically generated from `main` by the repository's sync workflow. You do not need to create or manage the `functions` branch manually — just configure credentials and push to `main`.
+
+<Warning>
+  The `functions` branch is auto-generated. Do not edit it directly — any manual changes will be overwritten the next time the sync workflow runs.
+</Warning>
+
+## Deploy to Vercel
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork [xixu-me/Xget](https://github.com/xixu-me/Xget/fork) to your GitHub account.
+  </Step>
+
+  <Step title="Get your Vercel credentials">
+    You need three values from Vercel:
+
+    - **Access Token** — Go to [Vercel Account Settings → Tokens](https://vercel.com/account/settings/tokens) and create a new token.
+    - **Team ID** — Go to your team's **Settings** page and copy the Team ID (also called Org ID).
+    - **Project ID** — Create a new Vercel project (you can leave it empty for now), then go to the project's **Settings** page and copy the Project ID.
+  </Step>
+
+  <Step title="Configure GitHub Secrets">
+    In your forked repository, go to **Settings** → **Secrets and variables** → **Actions** and add these secrets:
+
+    | Secret name          | Value                       |
+    | -------------------- | --------------------------- |
+    | `VERCEL_TOKEN`       | Your Vercel Access Token    |
+    | `VERCEL_ORG_ID`      | Your Team ID                |
+    | `VERCEL_PROJECT_ID`  | Your Project ID             |
+  </Step>
+
+  <Step title="Trigger deployment">
+    Push a code change to the `main` branch. The GitHub Actions workflow will:
+
+    1. Convert the Workers source to Vercel Functions format.
+    2. Sync the result to the `functions` branch.
+    3. Deploy from the `functions` branch to Vercel.
+
+    You can also trigger the workflow manually from the **Actions** tab.
+  </Step>
+
+  <Step title="Bind a custom domain (optional)">
+    In the Vercel dashboard, open your project → **Settings** → **Domains** to add and verify a custom domain.
+  </Step>
+</Steps>
+
+## Deploy to Netlify
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork [xixu-me/Xget](https://github.com/xixu-me/Xget/fork) to your GitHub account.
+  </Step>
+
+  <Step title="Get your Netlify credentials">
+    You need two values from Netlify:
+
+    - **Personal access token** — Go to [Netlify User Settings → Applications](https://app.netlify.com/user/applications) and create a new personal access token.
+    - **Project ID** (Site ID) — Create a new Netlify site, then go to the site's **Site configuration** page and copy the Site ID listed under **Site details**.
+  </Step>
+
+  <Step title="Configure GitHub Secrets">
+    In your forked repository, go to **Settings** → **Secrets and variables** → **Actions** and add these secrets:
+
+    | Secret name           | Value                           |
+    | --------------------- | ------------------------------- |
+    | `NETLIFY_AUTH_TOKEN`  | Your personal access token      |
+    | `NETLIFY_SITE_ID`     | Your Netlify Site ID            |
+  </Step>
+
+  <Step title="Trigger deployment">
+    Push a code change to the `main` branch. The GitHub Actions workflow will convert the Workers source to Netlify Edge Functions format, sync it to the `functions` branch, and deploy to Netlify automatically.
+
+    You can also run the workflow manually from the **Actions** tab.
+  </Step>
+
+  <Step title="Bind a custom domain (optional)">
+    In the Netlify dashboard, open your site → **Domain management** → **Add a domain** to configure a custom domain.
+  </Step>
+</Steps>
+
+<Note>
+  Deployment is triggered only by changes to source code. Pushes that only modify documentation files (`.md`), `LICENSE`, `.gitignore`, or other non-source files do not trigger the sync or deployment workflows.
+</Note>

@@ -1,0 +1,77 @@
+{
+  "projectType": "infrastructure",
+  "projectName": "Xget",
+  "projectDescription": "An ultra-high-performance, secure acceleration engine that proxies developer resources—code repos, package registries, container images, AI APIs—through a global edge network.",
+  "theme": "aspen",
+  "primaryColor": "#2563EB",
+  "lightColor": "#3B82F6",
+  "darkColor": "#1D4ED8",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "url-conversion"
+            ]
+          },
+          {
+            "group": "Platform Guides",
+            "pages": [
+              "platforms/code-repositories",
+              "platforms/package-registries",
+              "platforms/linux-distributions",
+              "platforms/container-registries",
+              "platforms/ai-inference"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/cloudflare-workers",
+              "deployment/vercel-netlify",
+              "deployment/deno-deploy",
+              "deployment/self-hosted"
+            ]
+          },
+          {
+            "group": "Configuration & Development",
+            "pages": [
+              "configuration",
+              "development",
+              "troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Global edge acceleration via Cloudflare Workers with smart placement",
+    "Unified URL prefix routing for 40+ platforms (code repos, package managers, container registries, AI APIs)",
+    "Full Git protocol support including clone, push, pull, LFS, and submodules",
+    "Docker/OCI container registry protocol with auth token handling",
+    "AI inference API acceleration for 30+ providers (OpenAI, Anthropic, Gemini, etc.)",
+    "Enterprise-grade security headers (HSTS, CSP, X-Frame-Options, Permissions-Policy)",
+    "Edge caching with 30-minute TTL and cache-bypass for Git/protocol traffic",
+    "Intelligent retry with linear backoff (up to 3 retries)",
+    "Performance monitoring via X-Performance-Metrics response headers",
+    "Multi-platform deployment: Cloudflare Workers/Pages, Vercel, Netlify, Deno Deploy, Docker"
+  ],
+  "publicApiSurface": [
+    "GET /gh/... — GitHub acceleration",
+    "GET /gl/... — GitLab acceleration",
+    "GET /hf/... — Hugging Face model/dataset acceleration",
+    "GET /npm/... — npm registry acceleration",
+    "GET /pypi/... — PyPI package acceleration",
+    "GET /cr/[registry]/... — Container registry acceleration (Docker Hub, GHCR, GCR, ECR, etc.)",
+    "GET /ip/[provider]/... — AI inference provider acceleration (OpenAI, Anthropic, Gemini, etc.)",
+    "handleRequest(request, env, ctx) — main Cloudflare Worker entry point",
+    "PLATFORM_CATALOG — platform prefix to base URL mapping",
+    "CONFIG — timeout, retry, cache, and security configuration"
+  ]
+}

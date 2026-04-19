@@ -1,0 +1,38 @@
+---
+title: "Deploy Xget on Deno Deploy as a Serverless Edge Worker"
+description: "Run Xget on Deno Deploy's serverless edge runtime using the auto-generated functions branch and the Deno adapter as your entry point."
+---
+
+Deno Deploy is a serverless edge runtime that runs JavaScript and TypeScript natively without a build step. It is a lightweight alternative to Cloudflare Workers for teams working in the Deno ecosystem. Because Deno Deploy reads your entry point from the repository's default branch, deploying Xget requires switching the default branch from `main` to `functions` before connecting your repository.
+
+<Warning>
+  Switching the default branch to `functions` is required. Deno Deploy reads the project entry point from the default branch, so leaving `main` as default will point Deno Deploy at the wrong code. Make this change before creating your Deno Deploy project.
+</Warning>
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork [xixu-me/Xget](https://github.com/xixu-me/Xget/fork) to your GitHub account.
+  </Step>
+
+  <Step title="Switch the default branch to `functions`">
+    In your forked repository, go to **Settings** → **General** → **Default branch** and change the default branch from `main` to `functions`.
+
+    The `functions` branch is automatically generated from `main` by the repository's sync workflow — you will see it populated after the first push to `main`.
+  </Step>
+
+  <Step title="Deploy to Deno Deploy">
+    Follow the [Deno Deploy getting started guide](https://docs.deno.com/deploy/getting_started/) to create a new project. When prompted to connect a repository, select your forked Xget repository. Deno Deploy will use the `functions` branch (now your default) as the deployment source and `adapters/functions/deno.js` as the entry point.
+  </Step>
+
+  <Step title="Bind a custom domain (optional)">
+    In the Deno Deploy console, open your project → **Settings** → **Domains** to add and verify a custom domain.
+  </Step>
+</Steps>
+
+<Note>
+  The `functions` branch is auto-generated from `main` by the repository's sync workflow. Do not edit the `functions` branch directly — any manual changes will be overwritten the next time the workflow runs. To make changes, edit the source in `main` and let the workflow regenerate `functions`.
+</Note>
+
+<Info>
+  The `functions` branch entry point is `adapters/functions/deno.js`. This adapter wraps the core Cloudflare Workers request handler (`src/app/handle-request.js`) for the Deno runtime using `Deno.serve()`. It maps Deno environment variables to the configuration the handler expects and provides a minimal `ExecutionContext`-compatible shim. Because Deno Deploy does not support `waitUntil`, cache writes that would normally happen in the background are handled synchronously instead.
+</Info>

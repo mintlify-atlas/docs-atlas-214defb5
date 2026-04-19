@@ -1,0 +1,131 @@
+---
+title: "Deploy Xget to Cloudflare Workers and Cloudflare Pages"
+description: "Deploy Xget to Cloudflare's global edge network using Workers or Pages, with smart placement, built-in observability, and zero cold starts."
+---
+
+Cloudflare Workers is the recommended deployment target for Xget. It runs your instance across Cloudflare's global edge network — over 300 cities worldwide — so requests are handled close to both your users and the upstream services you're accelerating. Smart placement automatically routes each Worker invocation to the point of presence closest to the upstream origin, minimizing round-trip latency. Built-in observability (logs and traces) gives you production visibility without additional tooling.
+
+## Deploy to Cloudflare Workers
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork [xixu-me/Xget](https://github.com/xixu-me/Xget/fork) to your GitHub account. All deployment workflows run from your fork, so you control credentials and deployment triggers.
+  </Step>
+
+  <Step title="Get your Cloudflare credentials">
+    You need two values from your Cloudflare dashboard:
+
+    - **API token** — Go to [Account API tokens](https://dash.cloudflare.com/?to=/:account/api-tokens) and create a token using the **Edit Cloudflare Workers** template.
+    - **Account ID** — Go to [Workers and Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages) and copy the Account ID shown in the right-hand sidebar.
+  </Step>
+
+  <Step title="Configure GitHub Secrets">
+    In your forked repository, go to **Settings** → **Secrets and variables** → **Actions** and add two repository secrets:
+
+    | Secret name                | Value                         |
+    | -------------------------- | ----------------------------- |
+    | `CLOUDFLARE_API_TOKEN`     | Your API token from step 2    |
+    | `CLOUDFLARE_ACCOUNT_ID`    | Your Account ID from step 2   |
+  </Step>
+
+  <Step title="Trigger deployment">
+    Push any code change to the `main` branch to automatically trigger the GitHub Actions deployment workflow. You can also run it manually from the **Actions** tab in your repository.
+
+    <Note>
+      Pushes that only modify documentation files (`.md`), `LICENSE`, `.gitignore`, or other non-source files do not trigger deployment — only source code changes do.
+    </Note>
+  </Step>
+
+  <Step title="Bind a custom domain (optional)">
+    Once the Worker is deployed, open the Cloudflare dashboard → **Workers and Pages** → your Xget project → **Settings** → **Domains & Routes** to bind a custom domain.
+  </Step>
+</Steps>
+
+## Deploy to Cloudflare Pages
+
+Cloudflare Pages is an alternative Cloudflare runtime that some teams prefer for its branch preview and deployment management features. It uses the same Cloudflare credentials as Workers — the difference is that the repository automatically converts the Workers source to a Pages-compatible format and syncs it to the `pages` branch before deployment.
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork [xixu-me/Xget](https://github.com/xixu-me/Xget/fork) to your GitHub account.
+  </Step>
+
+  <Step title="Get your Cloudflare credentials">
+    Use the same credentials as for Workers:
+
+    - **API token** — Create one at [Account API tokens](https://dash.cloudflare.com/?to=/:account/api-tokens) using the **Edit Cloudflare Workers** template.
+    - **Account ID** — Copy it from [Workers and Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages).
+  </Step>
+
+  <Step title="Configure GitHub Secrets">
+    Add the same two secrets to your forked repository under **Settings** → **Secrets and variables** → **Actions**:
+
+    - `CLOUDFLARE_API_TOKEN`
+    - `CLOUDFLARE_ACCOUNT_ID`
+  </Step>
+
+  <Step title="Trigger deployment">
+    Push to the `main` branch. The workflow converts the Workers code to Pages format, syncs it to the `pages` branch, and then deploys to Cloudflare Pages automatically. You can also trigger it manually from the **Actions** tab.
+  </Step>
+
+  <Step title="Bind a custom domain (optional)">
+    Bind your domain in the Cloudflare Pages console under your project's **Custom domains** settings.
+  </Step>
+</Steps>
+
+<Note>
+  The `pages` branch is automatically generated from `main` by the sync workflow. Do not edit the `pages` branch directly — any manual changes will be overwritten the next time the workflow runs.
+</Note>
+
+## `wrangler.toml` reference
+
+The `wrangler.toml` file at the repository root controls how Wrangler builds and deploys the Worker.
+
+```toml
+name = "xget"
+main = "src/index.js"
+compatibility_date = "2024-10-22"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+[placement]
+mode = "smart"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1
+```
+
+Key fields:
+
+- **`name`** — The Worker name as it appears in the Cloudflare dashboard.
+- **`main`** — Entry point for the Worker bundle (`src/index.js`).
+- **`compatibility_date`** — Pins the runtime to a specific Cloudflare Workers API version.
+- **`placement.mode = "smart"`** — Enables smart placement; Cloudflare automatically runs each invocation at the point of presence with the lowest latency to the upstream service being proxied.
+- **`observability.logs`** — Captures invocation logs and persists them in the Cloudflare dashboard. Set `enabled = true` to activate the logs panel.
+- **`observability.traces`** — Records distributed traces for each request. Useful for diagnosing slow upstream responses.
+
+<Tip>
+  Smart placement is especially effective for Xget because latency to the upstream service (GitHub, Hugging Face, npm, etc.) matters more than latency to the end user. Cloudflare measures both and picks the optimal location automatically.
+</Tip>
+
+## Local development
+
+Run the Wrangler development server to test your instance locally before deploying:
+
+```bash
+npm run dev
+```
+
+This starts the Worker at `http://localhost:8787` using Wrangler's local runtime, which closely emulates the Cloudflare Workers environment. Changes to source files are picked up automatically.

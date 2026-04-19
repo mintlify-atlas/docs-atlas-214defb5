@@ -1,97 +1,75 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Xget: High-Performance Developer Resource Acceleration"
+description: "Xget accelerates access to GitHub, npm, PyPI, Docker, AI APIs, and 40+ platforms via a global edge network. Deploy your own instance in minutes."
 ---
 
-## Setting up
+Xget is an ultra-high-performance, secure acceleration engine that proxies developer resources through a global edge network. Whether you're downloading GitHub releases, pulling container images, installing packages, or calling AI inference APIs, Xget routes your requests through Cloudflare's edge infrastructure — bringing upstream services closer to you and dramatically improving speed and reliability.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get Xget running and make your first accelerated request in under 5 minutes.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="URL conversion" icon="link" href="/url-conversion">
+    Learn how to convert any supported platform URL to its Xget equivalent.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Platform guides" icon="globe" href="/platforms/code-repositories">
+    Step-by-step guides for Git, npm, PyPI, Docker, AI APIs, and more.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Deployment" icon="server" href="/deployment/cloudflare-workers">
+    Deploy your own Xget instance on Cloudflare Workers, Vercel, Netlify, or Docker.
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Why Xget?
 
-Everything you need to create world-class documentation.
+Xget solves a common problem for developers: slow or unreliable access to essential upstream resources. Instead of fighting timeouts and bandwidth constraints, Xget sits between you and the upstream service — caching responses at the edge, retrying transient failures automatically, and enforcing enterprise-grade security headers on every response.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="40+ platforms supported" icon="layer-group">
+    Code repos, package managers, container registries, AI providers, Linux distros, and more — all under one unified URL scheme.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Full Git protocol support" icon="code-branch">
+    Clone, push, pull, and use Git LFS transparently through Xget — no special client configuration needed.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Edge caching and retries" icon="bolt">
+    30-minute edge cache with automatic retry (up to 3 attempts, linear backoff) keeps downloads fast and reliable.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="Security by default" icon="shield-halved">
+    HSTS, CSP, X-Frame-Options, Permissions-Policy, and input sanitization applied to every response automatically.
   </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## How it works
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+Xget uses a simple URL prefix convention. Replace a platform's domain with your Xget instance domain plus a short platform prefix:
+
+```bash
+# Original GitHub URL
+https://github.com/microsoft/vscode/archive/refs/heads/main.zip
+
+# Xget-accelerated URL
+https://xget.xi-xu.me/gh/microsoft/vscode/archive/refs/heads/main.zip
+```
+
+The same pattern applies to npm, PyPI, Docker Hub, OpenAI, and every other supported platform. See the [URL conversion guide](/url-conversion) for the full prefix reference.
+
+## Get started
+
+<Steps>
+  <Step title="Use the pre-deployed instance">
+    The public instance at `xget.xi-xu.me` is available for evaluation. Point any supported URL at it to test acceleration immediately.
+  </Step>
+  <Step title="Convert your URLs">
+    Use the [URL Converter](https://xuc.xi-xu.me) tool or follow the [URL conversion guide](/url-conversion) to rewrite your download, clone, and registry URLs.
+  </Step>
+  <Step title="Deploy your own instance">
+    For production workloads, deploy your own Xget instance. Follow the [Cloudflare Workers](/deployment/cloudflare-workers) or [self-hosted Docker](/deployment/self-hosted) guide.
+  </Step>
+  <Step title="Configure your tools">
+    Globally configure Git, npm, pip, Cargo, and other tools to route through Xget automatically. See the [platform guides](/platforms/code-repositories) for tool-specific instructions.
+  </Step>
+</Steps>
+
+<Warning>
+  The public instance at `xget.xi-xu.me` is intended for evaluation only. For production or availability-sensitive workloads, deploy your own instance and put it behind authentication or IP allowlists.
+</Warning>

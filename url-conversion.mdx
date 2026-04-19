@@ -1,0 +1,200 @@
+---
+title: "URL conversion rules and supported platform prefixes"
+description: "How Xget's prefix-based URL scheme works, with a full reference table of all 40+ supported platforms, container registries, and AI inference providers."
+---
+
+Xget uses a simple prefix-based URL convention. To accelerate any supported URL, replace the platform's domain with your Xget instance domain followed by a short platform prefix. The rest of the path is passed through unchanged to the upstream service — no path rewriting occurs beyond stripping the prefix.
+
+## Conversion format
+
+```
+https://{instance}/{prefix}/{original-path}
+```
+
+For example, the GitHub URL `https://github.com/microsoft/vscode/archive/refs/heads/main.zip` becomes:
+
+```
+https://xget.xi-xu.me/gh/microsoft/vscode/archive/refs/heads/main.zip
+```
+
+The prefix `gh` identifies GitHub as the target platform. Everything after the prefix maps directly to the upstream path.
+
+<Note>
+  For most platforms, the path after the prefix maps directly to the upstream service path — only the domain changes. A small number of platforms (Rust Crates and Jenkins) apply path normalization to match their upstream API structure, but the URL format you use remains the same.
+</Note>
+
+<Tip>
+  Use the URL Converter tool at [xuc.xi-xu.me](https://xuc.xi-xu.me) to convert any supported URL with one click. Paste a URL, select your Xget instance, and copy the result.
+</Tip>
+
+## Code repositories and model hubs
+
+| Platform | Prefix | Original URL | Accelerated URL example |
+| --- | --- | --- | --- |
+| GitHub | `gh` | `https://github.com/...` | `https://xget.xi-xu.me/gh/microsoft/vscode.git` |
+| GitHub Gist | `gist` | `https://gist.github.com/...` | `https://xget.xi-xu.me/gist/xixu-me/e2ea9db6b1f143892495f796fef18631/raw/...` |
+| GitLab | `gl` | `https://gitlab.com/...` | `https://xget.xi-xu.me/gl/gitlab-org/gitlab.git` |
+| Gitea | `gitea` | `https://gitea.com/...` | `https://xget.xi-xu.me/gitea/gitea/gitea/archive/master.zip` |
+| Codeberg | `codeberg` | `https://codeberg.org/...` | `https://xget.xi-xu.me/codeberg/forgejo/forgejo.git` |
+| SourceForge | `sf` | `https://sourceforge.net/...` | `https://xget.xi-xu.me/sf/projects/sevenzip/files/7-Zip/23.01/7z2301-x64.exe/download` |
+| AOSP | `aosp` | `https://android.googlesource.com/...` | `https://xget.xi-xu.me/aosp/platform/frameworks/base.git` |
+| Hugging Face | `hf` | `https://huggingface.co/...` | `https://xget.xi-xu.me/hf/microsoft/DialoGPT-medium/resolve/main/pytorch_model.bin` |
+| Civitai | `civitai` | `https://civitai.com/...` | `https://xget.xi-xu.me/civitai/api/download/models/128713` |
+
+## Package managers
+
+| Platform | Prefix | Original URL | Accelerated URL example |
+| --- | --- | --- | --- |
+| npm | `npm` | `https://registry.npmjs.org/...` | `https://xget.xi-xu.me/npm/react/-/react-18.2.0.tgz` |
+| PyPI | `pypi` | `https://pypi.org/...` | `https://xget.xi-xu.me/pypi/packages/source/r/requests/requests-2.31.0.tar.gz` |
+| conda (default channels) | `conda` | `https://repo.anaconda.com/...` | `https://xget.xi-xu.me/conda/pkgs/main/linux-64/numpy-1.24.3-py311h08b1b3b_1.conda` |
+| conda (community channels) | `conda/community` | `https://conda.anaconda.org/...` | `https://xget.xi-xu.me/conda/community/conda-forge/linux-64/repodata.json` |
+| Maven Central | `maven` | `https://repo1.maven.org/...` | `https://xget.xi-xu.me/maven/maven2/org/springframework/spring-core/5.3.21/spring-core-5.3.21.jar` |
+| Apache downloads | `apache` | `https://downloads.apache.org/...` | `https://xget.xi-xu.me/apache/kafka/3.6.1/kafka_2.13-3.6.1.tgz` |
+| Gradle plugins | `gradle` | `https://plugins.gradle.org/...` | `https://xget.xi-xu.me/gradle/m2/org/gradle/gradle-hello-world-plugin/0.2/gradle-hello-world-plugin-0.2.jar` |
+| Homebrew formulae | `homebrew` | `https://github.com/Homebrew/...` | `https://xget.xi-xu.me/homebrew/homebrew-core/raw/HEAD/Formula/g/git.rb` |
+| Homebrew API | `homebrew/api` | `https://formulae.brew.sh/api/...` | `https://xget.xi-xu.me/homebrew/api/formula/git.json` |
+| Homebrew bottles | `homebrew/bottles` | `https://ghcr.io/...` | `https://xget.xi-xu.me/homebrew/bottles/v2/homebrew/core/git/manifests/2.39.0` |
+| RubyGems | `rubygems` | `https://rubygems.org/...` | `https://xget.xi-xu.me/rubygems/gems/rails-7.0.4.gem` |
+| CRAN | `cran` | `https://cran.r-project.org/...` | `https://xget.xi-xu.me/cran/src/contrib/ggplot2_3.5.2.tar.gz` |
+| CPAN | `cpan` | `https://www.cpan.org/...` | `https://xget.xi-xu.me/cpan/modules/by-module/DBI/DBI-1.643.tar.gz` |
+| CTAN | `ctan` | `https://tug.ctan.org/...` | `https://xget.xi-xu.me/ctan/tex-archive/macros/latex/contrib/beamer.zip` |
+| Go modules | `golang` | `https://proxy.golang.org/...` | `https://xget.xi-xu.me/golang/github.com/gin-gonic/gin/@v/v1.9.1.zip` |
+| NuGet | `nuget` | `https://api.nuget.org/...` | `https://xget.xi-xu.me/nuget/v3-flatcontainer/newtonsoft.json/13.0.3/newtonsoft.json.13.0.3.nupkg` |
+| Rust Crates | `crates` | `https://crates.io/...` | `https://xget.xi-xu.me/crates/api/v1/crates/serde/1.0.0/download` |
+| Packagist | `packagist` | `https://repo.packagist.org/...` | `https://xget.xi-xu.me/packagist/p2/symfony/console.json` |
+| Flathub | `flathub` | `https://dl.flathub.org/...` | `https://xget.xi-xu.me/flathub/repo/appstream/org.gnome.gedit.flatpakref` |
+
+## Linux distributions
+
+| Platform | Prefix | Original URL | Accelerated URL example |
+| --- | --- | --- | --- |
+| Debian | `debian` | `https://deb.debian.org/...` | `https://xget.xi-xu.me/debian/debian/pool/main/c/curl/curl_7.88.1-10+deb12u4_amd64.deb` |
+| Ubuntu | `ubuntu` | `https://archive.ubuntu.com/...` | `https://xget.xi-xu.me/ubuntu/ubuntu/pool/main/g/git/git_2.34.1-1ubuntu1.9_amd64.deb` |
+| Fedora | `fedora` | `https://dl.fedoraproject.org/...` | `https://xget.xi-xu.me/fedora/pub/fedora/linux/releases/39/Everything/x86_64/os/Packages/n/nginx-1.24.0-1.fc39.x86_64.rpm` |
+| Rocky Linux | `rocky` | `https://download.rockylinux.org/...` | `https://xget.xi-xu.me/rocky/pub/rocky/9/BaseOS/x86_64/os/Packages/b/bash-5.1.8-6.el9.x86_64.rpm` |
+| openSUSE | `opensuse` | `https://download.opensuse.org/...` | `https://xget.xi-xu.me/opensuse/distribution/leap/15.5/repo/oss/x86_64/vim-9.0.1572-150500.20.8.1.x86_64.rpm` |
+| Arch Linux | `arch` | `https://geo.mirror.pkgbuild.com/...` | `https://xget.xi-xu.me/arch/core/os/x86_64/linux-6.6.10.arch1-1-x86_64.pkg.tar.zst` |
+
+## Other resources
+
+| Platform | Prefix | Original URL | Accelerated URL example |
+| --- | --- | --- | --- |
+| arXiv | `arxiv` | `https://arxiv.org/...` | `https://xget.xi-xu.me/arxiv/pdf/2301.07041.pdf` |
+| F-Droid | `fdroid` | `https://f-droid.org/...` | `https://xget.xi-xu.me/fdroid/repo/org.fdroid.fdroid_1016050.apk` |
+| Jenkins plugins | `jenkins` | `https://updates.jenkins.io/...` | `https://xget.xi-xu.me/jenkins/download/plugins/maven-plugin/3.27/maven-plugin.hpi` |
+
+## Container registries
+
+Container registry requests use the `cr/{registry-prefix}` format. Xget implements the Docker Registry HTTP API v2 protocol, including token-based authentication.
+
+| Registry | Prefix | Original URL | Accelerated URL example |
+| --- | --- | --- | --- |
+| Docker Hub | `cr/docker` | `https://registry-1.docker.io/...` | `https://xget.xi-xu.me/cr/docker/v2/library/nginx/manifests/latest` |
+| Quay.io | `cr/quay` | `https://quay.io/...` | `https://xget.xi-xu.me/cr/quay/v2/coreos/etcd/manifests/latest` |
+| Google Container Registry | `cr/gcr` | `https://gcr.io/...` | `https://xget.xi-xu.me/cr/gcr/v2/distroless/base/manifests/latest` |
+| Microsoft Container Registry | `cr/mcr` | `https://mcr.microsoft.com/...` | `https://xget.xi-xu.me/cr/mcr/v2/dotnet/runtime/manifests/latest` |
+| Amazon Public ECR | `cr/ecr` | `https://public.ecr.aws/...` | `https://xget.xi-xu.me/cr/ecr/v2/lambda/python/manifests/latest` |
+| GitHub Container Registry | `cr/ghcr` | `https://ghcr.io/...` | `https://xget.xi-xu.me/cr/ghcr/v2/nginxinc/nginx-unprivileged/manifests/latest` |
+| GitLab Container Registry | `cr/gitlab` | `https://registry.gitlab.com/...` | `https://xget.xi-xu.me/cr/gitlab/v2/gitlab-org/gitlab-runner/manifests/latest` |
+| Red Hat Registry | `cr/redhat` | `https://registry.redhat.io/...` | `https://xget.xi-xu.me/cr/redhat/v2/ubi8/ubi/manifests/latest` |
+| Oracle Container Registry | `cr/oracle` | `https://container-registry.oracle.com/...` | `https://xget.xi-xu.me/cr/oracle/v2/os/oraclelinux/manifests/latest` |
+| Cloudsmith | `cr/cloudsmith` | `https://docker.cloudsmith.io/...` | `https://xget.xi-xu.me/cr/cloudsmith/v2/...` |
+| DigitalOcean Registry | `cr/digitalocean` | `https://registry.digitalocean.com/...` | `https://xget.xi-xu.me/cr/digitalocean/v2/...` |
+| VMware Registry | `cr/vmware` | `https://projects.registry.vmware.com/...` | `https://xget.xi-xu.me/cr/vmware/v2/...` |
+| Kubernetes Registry | `cr/k8s` | `https://registry.k8s.io/...` | `https://xget.xi-xu.me/cr/k8s/v2/kube-apiserver/manifests/latest` |
+| Heroku Registry | `cr/heroku` | `https://registry.heroku.com/...` | `https://xget.xi-xu.me/cr/heroku/v2/...` |
+| SUSE Registry | `cr/suse` | `https://registry.suse.com/...` | `https://xget.xi-xu.me/cr/suse/v2/...` |
+| openSUSE Registry | `cr/opensuse` | `https://registry.opensuse.org/...` | `https://xget.xi-xu.me/cr/opensuse/v2/...` |
+| Gitpod Registry | `cr/gitpod` | `https://registry.gitpod.io/...` | `https://xget.xi-xu.me/cr/gitpod/v2/...` |
+
+## AI inference providers
+
+AI inference API requests use the `ip/{provider-prefix}` format. Xget proxies the full API, including streaming responses and all HTTP methods (POST, PUT, PATCH, DELETE) required by inference APIs.
+
+| Provider | Prefix | Original URL | Accelerated URL example |
+| --- | --- | --- | --- |
+| OpenAI | `ip/openai` | `https://api.openai.com/...` | `https://xget.xi-xu.me/ip/openai/v1/chat/completions` |
+| Anthropic | `ip/anthropic` | `https://api.anthropic.com/...` | `https://xget.xi-xu.me/ip/anthropic/v1/messages` |
+| Gemini | `ip/gemini` | `https://generativelanguage.googleapis.com/...` | `https://xget.xi-xu.me/ip/gemini/v1beta/models/gemini-2.5-flash:generateContent` |
+| Vertex AI | `ip/vertexai` | `https://aiplatform.googleapis.com/...` | `https://xget.xi-xu.me/ip/vertexai/v1/...` |
+| Cohere | `ip/cohere` | `https://api.cohere.ai/...` | `https://xget.xi-xu.me/ip/cohere/v1/chat` |
+| Mistral AI | `ip/mistralai` | `https://api.mistral.ai/...` | `https://xget.xi-xu.me/ip/mistralai/v1/chat/completions` |
+| xAI | `ip/xai` | `https://api.x.ai/...` | `https://xget.xi-xu.me/ip/xai/v1/chat/completions` |
+| GitHub Models | `ip/githubmodels` | `https://models.github.ai/...` | `https://xget.xi-xu.me/ip/githubmodels/inference/chat/completions` |
+| NVIDIA API | `ip/nvidiaapi` | `https://integrate.api.nvidia.com/...` | `https://xget.xi-xu.me/ip/nvidiaapi/v1/chat/completions` |
+| Perplexity | `ip/perplexity` | `https://api.perplexity.ai/...` | `https://xget.xi-xu.me/ip/perplexity/chat/completions` |
+| Groq | `ip/groq` | `https://api.groq.com/...` | `https://xget.xi-xu.me/ip/groq/openai/v1/chat/completions` |
+| Cerebras | `ip/cerebras` | `https://api.cerebras.ai/...` | `https://xget.xi-xu.me/ip/cerebras/v1/chat/completions` |
+| SambaNova | `ip/sambanova` | `https://api.sambanova.ai/...` | `https://xget.xi-xu.me/ip/sambanova/v1/chat/completions` |
+| Siray | `ip/siray` | `https://api.siray.ai/...` | `https://xget.xi-xu.me/ip/siray/v1/...` |
+| HF Inference | `ip/huggingface` | `https://router.huggingface.co/...` | `https://xget.xi-xu.me/ip/huggingface/hf-inference/models/openai/whisper-large-v3` |
+| Together | `ip/together` | `https://api.together.xyz/...` | `https://xget.xi-xu.me/ip/together/v1/chat/completions` |
+| Replicate | `ip/replicate` | `https://api.replicate.com/...` | `https://xget.xi-xu.me/ip/replicate/v1/predictions` |
+| Fireworks | `ip/fireworks` | `https://api.fireworks.ai/...` | `https://xget.xi-xu.me/ip/fireworks/inference/v1/chat/completions` |
+| Nebius | `ip/nebius` | `https://api.studio.nebius.ai/...` | `https://xget.xi-xu.me/ip/nebius/v1/chat/completions` |
+| Jina | `ip/jina` | `https://api.jina.ai/...` | `https://xget.xi-xu.me/ip/jina/v1/embeddings` |
+| Voyage AI | `ip/voyageai` | `https://api.voyageai.com/...` | `https://xget.xi-xu.me/ip/voyageai/v1/embeddings` |
+| Fal AI | `ip/falai` | `https://fal.run/...` | `https://xget.xi-xu.me/ip/falai/fal-ai/flux/dev` |
+| Novita | `ip/novita` | `https://api.novita.ai/...` | `https://xget.xi-xu.me/ip/novita/v3/openai/chat/completions` |
+| Burncloud | `ip/burncloud` | `https://ai.burncloud.com/...` | `https://xget.xi-xu.me/ip/burncloud/v1/...` |
+| OpenRouter | `ip/openrouter` | `https://openrouter.ai/...` | `https://xget.xi-xu.me/ip/openrouter/api/v1/chat/completions` |
+| Poe | `ip/poe` | `https://api.poe.com/...` | `https://xget.xi-xu.me/ip/poe/bot/...` |
+| Featherless AI | `ip/featherlessai` | `https://api.featherless.ai/...` | `https://xget.xi-xu.me/ip/featherlessai/v1/chat/completions` |
+| Hyperbolic | `ip/hyperbolic` | `https://api.hyperbolic.xyz/...` | `https://xget.xi-xu.me/ip/hyperbolic/v1/chat/completions` |
+| Braintrust | `ip/braintrust` | `https://api.braintrust.dev/...` | `https://xget.xi-xu.me/ip/braintrust/v1/chat/completions` |
+
+## Conversion examples
+
+The following examples show four common conversions in full.
+
+### GitHub file download
+
+```bash
+# Original
+https://github.com/microsoft/vscode/archive/refs/heads/main.zip
+
+# Xget-accelerated (replace domain, add gh prefix)
+https://xget.xi-xu.me/gh/microsoft/vscode/archive/refs/heads/main.zip
+
+# Download with wget
+wget https://xget.xi-xu.me/gh/microsoft/vscode/archive/refs/heads/main.zip
+```
+
+### Hugging Face model file
+
+```bash
+# Original
+https://huggingface.co/microsoft/DialoGPT-medium/resolve/main/pytorch_model.bin
+
+# Xget-accelerated (replace domain, add hf prefix)
+https://xget.xi-xu.me/hf/microsoft/DialoGPT-medium/resolve/main/pytorch_model.bin
+
+# Multi-threaded download with aria2c
+aria2c -x 16 -s 16 https://xget.xi-xu.me/hf/microsoft/DialoGPT-medium/resolve/main/pytorch_model.bin
+```
+
+### npm package fetch
+
+```bash
+# Original
+https://registry.npmjs.org/react/-/react-18.2.0.tgz
+
+# Xget-accelerated (replace domain, add npm prefix)
+https://xget.xi-xu.me/npm/react/-/react-18.2.0.tgz
+
+# Configure npm globally to use Xget
+npm config set registry https://xget.xi-xu.me/npm/
+```
+
+### Docker Hub image pull
+
+Xget uses a path-based scheme for container registries — use the `cr/docker` prefix directly in your image reference:
+
+```bash
+# Pull directly using the Xget cr/docker prefix
+docker pull xget.xi-xu.me/cr/docker/library/nginx:latest
+
+# Or for user images
+docker pull xget.xi-xu.me/cr/docker/nginx/nginx-unprivileged:latest
+```

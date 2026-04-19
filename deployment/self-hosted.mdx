@@ -1,0 +1,133 @@
+---
+title: "Self-host Xget on your own server with Docker or Podman"
+description: "Run Xget on your own infrastructure using Docker or Podman — pull the pre-built image, build from source, or use Docker Compose in production."
+---
+
+Self-hosted deployment gives your team full control over the runtime environment, network configuration, and access policies. It is a good fit for air-gapped environments, private networks, or organizations with strict data residency requirements.
+
+<Warning>
+  Self-hosted deployment does not include global edge network acceleration. Performance depends on your server's location relative to your users and the upstream services Xget proxies. For global performance, use the [Cloudflare Workers](/deployment/cloudflare-workers) deployment instead.
+</Warning>
+
+<Warning>
+  Put Xget behind authentication, IP allowlists, or both unless you explicitly intend to run a public mirror. Xget is a high-performance HTTP proxy — an open, unauthenticated instance can be abused.
+</Warning>
+
+## Using the pre-built image
+
+The easiest way to get started is to pull the pre-built image from GitHub Container Registry.
+
+<Tabs>
+  <Tab title="Docker">
+    ```bash
+    # Pull the latest image
+    docker pull ghcr.io/xixu-me/xget:latest
+
+    # Run the container
+    docker run -d \
+      --name xget \
+      -p 8080:8080 \
+      ghcr.io/xixu-me/xget:latest
+    ```
+  </Tab>
+  <Tab title="Podman">
+    ```bash
+    # Pull the latest image
+    podman pull ghcr.io/xixu-me/xget:latest
+
+    # Run the container
+    podman run -d \
+      --name xget \
+      -p 8080:8080 \
+      ghcr.io/xixu-me/xget:latest
+    ```
+  </Tab>
+</Tabs>
+
+## Building locally
+
+If you want to build the image from source — for example, to apply custom patches or audit the build — clone the repository and build it yourself.
+
+<Tabs>
+  <Tab title="Docker">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/xixu-me/Xget.git
+    cd Xget
+
+    # Build the image
+    docker build -t xget:local .
+
+    # Run the container
+    docker run -d \
+      --name xget \
+      -p 8080:8080 \
+      xget:local
+    ```
+  </Tab>
+  <Tab title="Podman">
+    ```bash
+    # Clone the repository
+    git clone https://github.com/xixu-me/Xget.git
+    cd Xget
+
+    # Build the image
+    podman build -t xget:local .
+
+    # Run the container
+    podman run -d \
+      --name xget \
+      -p 8080:8080 \
+      xget:local
+    ```
+  </Tab>
+</Tabs>
+
+The `Dockerfile` uses a two-stage build: the first stage compiles the Worker bundle using Wrangler, and the second stage runs it on the `workerd` runtime (Cloudflare's open-source Worker runtime). The final image is minimal and does not include Node.js development tooling.
+
+## Docker Compose
+
+For production deployments, Docker Compose makes it straightforward to manage container lifecycle and restart policies.
+
+Create a `docker-compose.yml` file with the following content:
+
+```yaml
+version: '3.8'
+
+services:
+  xget:
+    image: ghcr.io/xixu-me/xget:latest
+    container_name: xget
+    ports:
+      - '8080:8080'
+    restart: unless-stopped
+```
+
+Then bring up the service:
+
+<Tabs>
+  <Tab title="Docker Compose">
+    ```bash
+    docker compose up -d
+    ```
+  </Tab>
+  <Tab title="Podman Compose">
+    ```bash
+    podman compose up -d
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  The `restart: unless-stopped` policy ensures Xget restarts automatically after a crash or host reboot, without restarting if you manually stop the container. This is the recommended policy for production.
+</Tip>
+
+<Note>
+  After deployment, Xget listens on port `8080`. If you expose this port publicly, ensure you have authentication or IP allowlists in place. For production setups, running Xget behind a reverse proxy (such as nginx) with TLS termination is strongly recommended.
+</Note>
+
+## Deploying on DigitalOcean
+
+If you want to run Xget on DigitalOcean, the repository includes a detailed guide covering Droplets with Docker Compose, the App Platform (fully managed), and Kubernetes (DOKS). It also covers HTTPS setup with nginx and Let's Encrypt, Cloud Firewall hardening, and cost optimization.
+
+See [Deploying and Optimizing Xget on DigitalOcean](https://github.com/xixu-me/Xget/blob/main/docs/deploy-on-digitalocean.md) in the source repository for the full guide.

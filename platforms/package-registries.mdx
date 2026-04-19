@@ -1,0 +1,543 @@
+---
+title: "Package registry acceleration for all ecosystems"
+description: "Accelerate npm, PyPI, conda, Maven, Go, Rust, Ruby, PHP, .NET, R, Perl, LaTeX, Homebrew, Flathub, and Jenkins with Xget's global edge proxy."
+---
+
+Xget provides a unified acceleration layer for virtually every major package manager and software registry. Whether you work with Node.js, Python, Java, Go, Rust, Ruby, PHP, .NET, R, Perl, or TeX, you can point your package manager at Xget and immediately benefit from edge caching and faster downloads — with no changes to your application code.
+
+## Supported registries
+
+| Registry | Prefix | Original URL |
+|---|---|---|
+| npm | `npm` | `https://registry.npmjs.org` |
+| PyPI | `pypi` | `https://pypi.org` |
+| conda (default channels) | `conda` | `https://repo.anaconda.com` |
+| conda (community channels) | `conda/community` | `https://conda.anaconda.org` |
+| Maven Central | `maven` | `https://repo1.maven.org` |
+| Apache downloads | `apache` | `https://downloads.apache.org` |
+| Gradle Plugin Portal | `gradle` | `https://plugins.gradle.org` |
+| Homebrew | `homebrew` | `https://github.com/Homebrew` |
+| RubyGems | `rubygems` | `https://rubygems.org` |
+| CRAN | `cran` | `https://cran.r-project.org` |
+| CPAN | `cpan` | `https://www.cpan.org` |
+| CTAN | `ctan` | `https://tug.ctan.org` |
+| Go Modules | `golang` | `https://proxy.golang.org` |
+| NuGet | `nuget` | `https://api.nuget.org` |
+| Rust Crates | `crates` | `https://crates.io` |
+| Packagist | `packagist` | `https://repo.packagist.org` |
+| Flathub | `flathub` | `https://dl.flathub.org` |
+| arXiv | `arxiv` | `https://arxiv.org` |
+| F-Droid | `fdroid` | `https://f-droid.org` |
+| Jenkins plugins | `jenkins` | `https://updates.jenkins.io` |
+
+## Configuration by ecosystem
+
+<Tabs>
+  <Tab title="npm / Node.js">
+    **Temporary use**
+
+    ```bash
+    # Use Xget for a single install
+    npm install --registry https://xget.xi-xu.me/npm/
+    ```
+
+    **Global configuration**
+
+    ```bash
+    # Set globally for npm
+    npm config set registry https://xget.xi-xu.me/npm/
+
+    # Verify
+    npm config get registry
+    ```
+
+    **Project-level `.npmrc`**
+
+    ```bash
+    # Configure project-level mirror (.npmrc is shared by npm and Bun)
+    echo "registry=https://xget.xi-xu.me/npm/" > .npmrc
+
+    # Install dependencies
+    npm install
+    ```
+
+    **Bun — `bunfig.toml`**
+
+    ```toml
+    # bunfig.toml (project-level) or ~/.bunfig.toml (global)
+    [install]
+    registry = "https://xget.xi-xu.me/npm/"
+    ```
+
+    ```bash
+    # Install dependencies with Bun
+    bun install
+    ```
+  </Tab>
+  <Tab title="Python (pip / conda)">
+    **pip — temporary use**
+
+    ```bash
+    pip install requests -i https://xget.xi-xu.me/pypi/simple/
+    ```
+
+    **pip — global configuration**
+
+    ```bash
+    pip config set global.index-url https://xget.xi-xu.me/pypi/simple/
+    pip config set global.trusted-host xget.xi-xu.me
+
+    # Verify
+    pip config list
+    ```
+
+    **pip — `pip.conf` file**
+
+    ```bash
+    # Create pip.conf (Linux/macOS)
+    mkdir -p ~/.pip
+    cat > ~/.pip/pip.conf << EOF
+    [global]
+    index-url = https://xget.xi-xu.me/pypi/simple/
+    trusted-host = xget.xi-xu.me
+    EOF
+    ```
+
+    **`requirements.txt` with mirror**
+
+    ```txt
+    --index-url https://xget.xi-xu.me/pypi/simple/
+    --trusted-host xget.xi-xu.me
+
+    requests>=2.25.0
+    numpy>=1.21.0
+    pandas>=1.3.0
+    matplotlib>=3.4.0
+    ```
+
+    **conda — command-line configuration**
+
+    ```bash
+    # Default channel mirrors
+    conda config --add default_channels https://xget.xi-xu.me/conda/pkgs/msys2
+    conda config --add default_channels https://xget.xi-xu.me/conda/pkgs/r
+    conda config --add default_channels https://xget.xi-xu.me/conda/pkgs/main
+
+    # All community channels via alias (recommended)
+    conda config --set channel_alias https://xget.xi-xu.me/conda/community
+
+    # Specific community channels
+    conda config --add channels https://xget.xi-xu.me/conda/community/conda-forge
+    conda config --add channels https://xget.xi-xu.me/conda/community/bioconda
+    ```
+
+    **conda — `.condarc`**
+
+    ```yaml
+    default_channels:
+      - https://xget.xi-xu.me/conda/pkgs/main
+      - https://xget.xi-xu.me/conda/pkgs/r
+      - https://xget.xi-xu.me/conda/pkgs/msys2
+    channel_alias: https://xget.xi-xu.me/conda/community
+    channel_priority: strict
+    show_channel_urls: true
+    ```
+
+    **conda — `environment.yml`**
+
+    ```yaml
+    name: myproject
+    channels:
+      - https://xget.xi-xu.me/conda/pkgs/main
+      - https://xget.xi-xu.me/conda/pkgs/r
+      - https://xget.xi-xu.me/conda/community/bioconda
+      - https://xget.xi-xu.me/conda/community/conda-forge
+    dependencies:
+      - python=3.11
+      - numpy>=1.24.0
+      - pandas>=2.0.0
+      - matplotlib>=3.7.0
+      - scipy>=1.10.0
+      - pip
+      - pip:
+          - requests>=2.28.0
+    ```
+  </Tab>
+  <Tab title="Java (Maven / Gradle)">
+    **Maven — `~/.m2/settings.xml`**
+
+    ```xml
+    <settings>
+      <mirrors>
+        <mirror>
+          <id>xget-maven-central</id>
+          <mirrorOf>central</mirrorOf>
+          <name>Xget Maven Central Mirror</name>
+          <url>https://xget.xi-xu.me/maven/maven2</url>
+        </mirror>
+      </mirrors>
+    </settings>
+    ```
+
+    **Maven — `pom.xml`**
+
+    ```xml
+    <project>
+      <repositories>
+        <repository>
+          <id>xget-maven-central</id>
+          <name>Xget Maven Central</name>
+          <url>https://xget.xi-xu.me/maven/maven2</url>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>xget-maven-central</id>
+          <name>Xget Maven Central</name>
+          <url>https://xget.xi-xu.me/maven/maven2</url>
+        </pluginRepository>
+      </pluginRepositories>
+    </project>
+    ```
+
+    **Gradle — `build.gradle`**
+
+    ```groovy
+    repositories {
+        maven {
+            url 'https://xget.xi-xu.me/maven/maven2'
+        }
+        gradlePluginPortal {
+            url 'https://xget.xi-xu.me/gradle/m2'
+        }
+    }
+
+    pluginManagement {
+        repositories {
+            maven {
+                url 'https://xget.xi-xu.me/gradle/m2'
+            }
+            gradlePluginPortal()
+        }
+    }
+    ```
+
+    **Gradle — `~/.gradle/init.gradle` (global)**
+
+    ```groovy
+    allprojects {
+        repositories {
+            maven {
+                url 'https://xget.xi-xu.me/maven/maven2'
+            }
+        }
+    }
+
+    settingsEvaluated { settings ->
+        settings.pluginManagement {
+            repositories {
+                maven {
+                    url 'https://xget.xi-xu.me/gradle/m2'
+                }
+                gradlePluginPortal()
+            }
+        }
+    }
+    ```
+  </Tab>
+  <Tab title="Go">
+    **Environment variable (session)**
+
+    ```bash
+    export GOPROXY=https://xget.xi-xu.me/golang,direct
+    export GOSUMDB=off
+    ```
+
+    **Permanent configuration**
+
+    ```bash
+    go env -w GOPROXY=https://xget.xi-xu.me/golang,direct
+    go env -w GOSUMDB=off
+
+    # Verify
+    go env GOPROXY
+    ```
+
+    **Download and manage modules**
+
+    ```bash
+    go mod download
+    go get -u ./...
+    ```
+  </Tab>
+  <Tab title="Rust (Cargo)">
+    **`~/.cargo/config.toml`**
+
+    ```bash
+    mkdir -p ~/.cargo
+    cat >> ~/.cargo/config.toml << EOF
+    [source.crates-io]
+    replace-with = "xget"
+
+    [source.xget]
+    registry = "https://xget.xi-xu.me/crates/"
+    EOF
+    ```
+
+    **`Cargo.toml` — no changes needed**
+
+    ```toml
+    [dependencies]
+    serde = "1.0"
+    tokio = "1.0"
+    reqwest = "0.11"
+    ```
+
+    ```bash
+    # Xget is used automatically
+    cargo build
+    cargo update
+    cargo add clap
+    ```
+  </Tab>
+  <Tab title="Ruby">
+    **RubyGems — global source**
+
+    ```bash
+    # Add Xget mirror and remove the original
+    gem sources --add https://xget.xi-xu.me/rubygems/
+    gem sources --remove https://rubygems.org/
+
+    # Verify
+    gem sources -l
+    ```
+
+    **`Gemfile`**
+
+    ```ruby
+    source 'https://xget.xi-xu.me/rubygems/'
+
+    gem 'rails', '~> 7.0.0'
+    gem 'pg', '~> 1.1'
+    gem 'puma', '~> 5.0'
+    ```
+
+    **Bundler mirror configuration**
+
+    ```bash
+    bundle config mirror.https://rubygems.org https://xget.xi-xu.me/rubygems/
+    bundle install
+    ```
+  </Tab>
+  <Tab title="PHP (Composer)">
+    **Global configuration**
+
+    ```bash
+    composer config -g repo.packagist composer https://xget.xi-xu.me/packagist/
+
+    # Verify
+    composer config -l
+    ```
+
+    **Project-level configuration**
+
+    ```bash
+    composer config repo.packagist composer https://xget.xi-xu.me/packagist/
+    ```
+
+    **`composer.json`**
+
+    ```json
+    {
+      "repositories": [
+        {
+          "type": "composer",
+          "url": "https://xget.xi-xu.me/packagist/"
+        }
+      ],
+      "require": {
+        "symfony/console": "^6.0",
+        "guzzlehttp/guzzle": "^7.0"
+      }
+    }
+    ```
+  </Tab>
+  <Tab title=".NET (NuGet)">
+    **Add source with `dotnet` CLI**
+
+    ```bash
+    dotnet nuget add source https://xget.xi-xu.me/nuget/v3/index.json -n xget
+
+    # List sources
+    dotnet nuget list source
+
+    # Restore using Xget
+    dotnet restore --source https://xget.xi-xu.me/nuget/v3/index.json
+    ```
+
+    **`NuGet.Config`**
+
+    ```xml
+    <?xml version="1.0" encoding="utf-8"?>
+    <configuration>
+      <packageSources>
+        <add key="xget" value="https://xget.xi-xu.me/nuget/v3/index.json" />
+      </packageSources>
+    </configuration>
+    ```
+  </Tab>
+  <Tab title="R (CRAN)">
+    **Temporary use**
+
+    ```r
+    install.packages("ggplot2", repos = "https://xget.xi-xu.me/cran/")
+    ```
+
+    **Session-level configuration**
+
+    ```r
+    options(repos = c(CRAN = "https://xget.xi-xu.me/cran/"))
+    ```
+
+    **`~/.Rprofile` (permanent)**
+
+    ```r
+    options(repos = c(
+      CRAN = "https://xget.xi-xu.me/cran/",
+      BioCsoft = "https://bioconductor.org/packages/release/bioc",
+      BioCann = "https://bioconductor.org/packages/release/data/annotation",
+      BioCexp = "https://bioconductor.org/packages/release/data/experiment"
+    ))
+
+    options(download.file.method = "libcurl")
+    ```
+
+    **Command-line batch install**
+
+    ```bash
+    Rscript -e "
+    options(repos = c(CRAN = 'https://xget.xi-xu.me/cran/'))
+    packages <- c('dplyr', 'ggplot2', 'tidyr', 'readr')
+    install.packages(packages)
+    "
+    ```
+  </Tab>
+  <Tab title="Perl (CPAN)">
+    **Configure CPAN**
+
+    ```bash
+    cpan o conf urllist push https://xget.xi-xu.me/cpan/
+    cpan o conf commit
+    ```
+
+    **Use `cpanm` with Xget mirror**
+
+    ```bash
+    cpanm --mirror https://xget.xi-xu.me/cpan/ DBI
+    cpanm --mirror https://xget.xi-xu.me/cpan/ Mojolicious
+
+    # Install all dependencies from cpanfile
+    cpanm --mirror https://xget.xi-xu.me/cpan/ --installdeps .
+    ```
+  </Tab>
+  <Tab title="TeX/LaTeX (CTAN)">
+    **TeX Live — `tlmgr`**
+
+    ```bash
+    # Point tlmgr at the Xget CTAN mirror
+    tlmgr option repository https://xget.xi-xu.me/ctan/systems/texlive/tlnet
+
+    # Update package database
+    tlmgr update --self --all
+
+    # Install packages
+    tlmgr install beamer
+    tlmgr install tikz
+    ```
+
+    **MiKTeX**
+
+    ```bash
+    mpm --set-repository=https://xget.xi-xu.me/ctan/systems/win32/miktex
+    mpm --update-db
+    mpm --install=beamer
+    ```
+  </Tab>
+  <Tab title="Homebrew">
+    **Environment variables (session)**
+
+    ```bash
+    export HOMEBREW_BREW_GIT_REMOTE="https://xget.xi-xu.me/homebrew/brew.git"
+    export HOMEBREW_CORE_GIT_REMOTE="https://xget.xi-xu.me/homebrew/homebrew-core.git"
+    export HOMEBREW_API_DOMAIN="https://xget.xi-xu.me/homebrew/api"
+    export HOMEBREW_BOTTLE_DOMAIN="https://xget.xi-xu.me/homebrew/bottles"
+
+    brew update
+    ```
+
+    **Permanent — `~/.zprofile` (zsh)**
+
+    ```bash
+    echo 'export HOMEBREW_BREW_GIT_REMOTE="https://xget.xi-xu.me/homebrew/brew.git"' >> ~/.zprofile
+    echo 'export HOMEBREW_CORE_GIT_REMOTE="https://xget.xi-xu.me/homebrew/homebrew-core.git"' >> ~/.zprofile
+    echo 'export HOMEBREW_API_DOMAIN="https://xget.xi-xu.me/homebrew/api"' >> ~/.zprofile
+    echo 'export HOMEBREW_BOTTLE_DOMAIN="https://xget.xi-xu.me/homebrew/bottles"' >> ~/.zprofile
+    ```
+
+    **Permanent — `~/.bash_profile` (bash)**
+
+    ```bash
+    echo 'export HOMEBREW_BREW_GIT_REMOTE="https://xget.xi-xu.me/homebrew/brew.git"' >> ~/.bash_profile
+    echo 'export HOMEBREW_CORE_GIT_REMOTE="https://xget.xi-xu.me/homebrew/homebrew-core.git"' >> ~/.bash_profile
+    echo 'export HOMEBREW_API_DOMAIN="https://xget.xi-xu.me/homebrew/api"' >> ~/.bash_profile
+    echo 'export HOMEBREW_BOTTLE_DOMAIN="https://xget.xi-xu.me/homebrew/bottles"' >> ~/.bash_profile
+    ```
+  </Tab>
+  <Tab title="Flathub">
+    ```bash
+    # Import the official descriptor first to ensure the signing key is trusted
+    flatpak remote-add --if-not-exists flathub \
+      https://dl.flathub.org/repo/flathub.flatpakrepo
+
+    # Repoint the existing Flathub remote to the Xget mirror
+    flatpak remote-modify flathub \
+      --url=https://xget.xi-xu.me/flathub/repo/
+
+    # Install apps normally
+    flatpak install flathub org.gnome.gedit
+
+    # Restore the upstream when needed
+    flatpak remote-modify flathub \
+      --url=https://dl.flathub.org/repo/
+    ```
+  </Tab>
+  <Tab title="Jenkins">
+    **Via Jenkins web interface**
+
+    1. Log in to the Jenkins management interface.
+    2. Go to **Manage Jenkins** → **Plugins** → **Advanced**.
+    3. In the **Update Site** section, set the URL to `https://xget.xi-xu.me/jenkins/update-center.json`.
+    4. Click **Submit** to save.
+
+    **Via configuration file**
+
+    ```bash
+    # Edit $JENKINS_HOME/hudson.model.UpdateCenter.xml
+    sudo nano /var/lib/jenkins/hudson.model.UpdateCenter.xml
+    # Set: <url>https://xget.xi-xu.me/jenkins/update-center.json</url>
+
+    # Restart Jenkins
+    sudo systemctl restart jenkins
+    ```
+
+    **Download plugins directly**
+
+    ```bash
+    # Download Maven plugin
+    wget https://xget.xi-xu.me/jenkins/download/plugins/maven-plugin/3.27/maven-plugin.hpi
+
+    # Download Git plugin
+    curl -L -O https://xget.xi-xu.me/jenkins/download/plugins/git/5.2.1/git.hpi
+    ```
+  </Tab>
+</Tabs>

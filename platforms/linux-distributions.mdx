@@ -1,0 +1,118 @@
+---
+title: "Accelerate Linux package repos: APT, DNF, Pacman, Zypper"
+description: "Configure APT, DNF, Zypper, and Pacman to pull packages from Xget-accelerated mirrors for Debian, Ubuntu, Fedora, Rocky Linux, openSUSE, and Arch Linux."
+---
+
+Xget mirrors the official package repositories for the most widely deployed Linux distributions. By pointing your package manager at Xget, you route all package index fetches and `.deb`/`.rpm`/`.pkg.tar.zst` downloads through the edge network — reducing latency and improving reliability without changing how you install or upgrade software.
+
+## Supported distributions
+
+| Distribution | Prefix | Original URL |
+|---|---|---|
+| Debian | `debian` | `https://deb.debian.org` |
+| Ubuntu | `ubuntu` | `https://archive.ubuntu.com` |
+| Fedora | `fedora` | `https://dl.fedoraproject.org` |
+| Rocky Linux | `rocky` | `https://download.rockylinux.org` |
+| openSUSE | `opensuse` | `https://download.opensuse.org` |
+| Arch Linux | `arch` | `https://geo.mirror.pkgbuild.com` |
+
+## Configuration by distribution
+
+<Tabs>
+  <Tab title="Debian / Ubuntu (APT)">
+    <Warning>
+      Back up your current sources list before making changes. If the mirror is unreachable, APT will fail to update until you restore the original file.
+    </Warning>
+
+    ```bash
+    # Backup original source list
+    sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+
+    # Configure Debian mirror
+    echo "deb https://xget.xi-xu.me/debian/debian bookworm main" | sudo tee /etc/apt/sources.list
+    echo "deb https://xget.xi-xu.me/debian/debian-security bookworm-security main" | sudo tee -a /etc/apt/sources.list
+
+    # Update package list
+    sudo apt update
+    ```
+
+    **Ubuntu**
+
+    ```bash
+    # Backup original source list
+    sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+
+    # Configure Ubuntu mirror
+    echo "deb https://xget.xi-xu.me/ubuntu/ubuntu jammy main restricted universe multiverse" | sudo tee /etc/apt/sources.list
+    echo "deb https://xget.xi-xu.me/ubuntu/ubuntu jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+
+    # Update package list
+    sudo apt update
+    ```
+
+    <Note>
+      Debian security packages (`debian-security`) require their own mirror entry in `sources.list`. Xget mirrors this endpoint, but make sure to include it explicitly as shown above.
+    </Note>
+  </Tab>
+  <Tab title="Fedora (DNF)">
+    ```bash
+    # Configure Fedora mirror — disable metalink and set baseurl
+    sudo sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
+    sudo sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://xget.xi-xu.me/fedora/pub/fedora/linux|g' /etc/yum.repos.d/fedora*.repo
+
+    # Update package cache
+    sudo dnf makecache
+    ```
+  </Tab>
+  <Tab title="Rocky Linux (DNF)">
+    ```bash
+    # Configure Rocky Linux mirror — disable mirrorlist and set baseurl
+    sudo sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/rocky*.repo
+    sudo sed -i 's|^#baseurl=http://dl.rockylinux.org|baseurl=https://xget.xi-xu.me/rocky|g' /etc/yum.repos.d/rocky*.repo
+
+    # Update package cache
+    sudo dnf makecache
+    ```
+  </Tab>
+  <Tab title="openSUSE (Zypper)">
+    **openSUSE Leap**
+
+    ```bash
+    # Disable the existing repo-oss remote and add Xget mirror
+    sudo zypper mr -d repo-oss
+    sudo zypper ar -f https://xget.xi-xu.me/opensuse/distribution/leap/15.5/repo/oss/ repo-oss-xget
+
+    # Refresh software sources
+    sudo zypper refresh
+
+    # Verify configuration
+    sudo zypper lr -u
+    ```
+
+    **openSUSE Tumbleweed**
+
+    ```bash
+    sudo zypper mr -d repo-oss
+    sudo zypper ar -f https://xget.xi-xu.me/opensuse/tumbleweed/repo/oss/ repo-oss-xget
+
+    sudo zypper refresh
+    sudo zypper lr -u
+    ```
+  </Tab>
+  <Tab title="Arch Linux (Pacman)">
+    <Warning>
+      Back up your mirrorlist before overwriting it. A misconfigured mirrorlist will prevent `pacman` from reaching any mirrors until you restore the backup.
+    </Warning>
+
+    ```bash
+    # Backup original mirror list
+    sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+
+    # Configure Arch Linux mirror
+    echo 'Server = https://xget.xi-xu.me/arch/$repo/os/$arch' | sudo tee /etc/pacman.d/mirrorlist
+
+    # Update package database
+    sudo pacman -Sy
+    ```
+  </Tab>
+</Tabs>
